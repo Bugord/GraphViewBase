@@ -91,7 +91,7 @@
 }
 
 .port:hover .port-connector-cap{
-    background-color: rgb(240, 240, 240);
+    visibility: visible;
 }
 
 .port-input {
@@ -122,14 +122,18 @@
     margin-bottom: auto;
     margin-left: 0px;
     margin-right: 0px;
-    width: 14px;
-    height: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 100% 100% 100% 100%;
+    border-color: rgba(240, 240, 240, 1);
+    border-width: 1px;
 }
 
 .port-connector-cap {
     flex-grow: 1;
     border-radius: 100% 100% 100% 100%;
-    margin: 4px 4px 4px 4px;
+    margin: 1px 1px 1px 1px;
+    visibility: hidden;
 }
 
 .edge {

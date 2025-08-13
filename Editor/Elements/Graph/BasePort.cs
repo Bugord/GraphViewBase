@@ -7,11 +7,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace GraphViewBase {
-    public class BasePort : VisualElement, IPositionable {
-
-        private const float portCircleWidth = 4.8f;
-        private const float portCirclelineWidth = 1f;
+namespace GraphViewBase
+{
+    public class BasePort : VisualElement, IPositionable
+    {
+        private const float portCircleWidth = 1f;
+        private const float portCirclelineWidth = .25f;
 
         private static readonly Color s_DefaultColor = new(240 / 255f, 240 / 255f, 240 / 255f);
         private static readonly Color s_DefaultDisabledColor = new(70 / 255f, 70 / 255f, 70 / 255f);
@@ -25,30 +26,12 @@ namespace GraphViewBase {
         private BaseNode m_ParentNode;
 
         public override bool canGrabFocus => true;
+        
 
-        /// <summary>
-        /// Create some nice vector based circle graphics
-        /// </summary>
-        private static VectorImage portCircleGraphics = null;
-        private static VectorImage PortCircleGraphics {
-            get {
-                if (portCircleGraphics == null) {
-                    Painter2D painter = new Painter2D();
-                    portCircleGraphics = VectorImage.CreateInstance<VectorImage>();
-                    painter.lineWidth = portCirclelineWidth;
-                    painter.lineCap = LineCap.Butt;
-                    painter.strokeColor = Color.white;
-                    painter.BeginPath();
-                    painter.Arc(new Vector2(portCircleWidth, portCircleWidth), portCircleWidth, 0, 360);
-                    painter.Stroke();
-                    painter.SaveToVectorImage(portCircleGraphics);
-                }
-                return portCircleGraphics;
-            }
-        }
+#region Constructor
 
-        #region Constructor
-        public BasePort(Orientation orientation, Direction direction, PortCapacity capacity) {
+        public BasePort(Orientation orientation, Direction direction, PortCapacity capacity)
+        {
             portColor = DefaultPortColor;
 
             ClearClassList();
@@ -64,8 +47,8 @@ namespace GraphViewBase {
             // Box
             m_ConnectorBox = new() { pickingMode = PickingMode.Ignore };
             m_ConnectorBox.AddToClassList("port-connector-box");
+            
             m_ConnectorBox.Add(m_ConnectorBoxCap);
-            m_ConnectorBox.style.backgroundImage = new StyleBackground(PortCircleGraphics);
 
             Add(m_ConnectorBox);
 
@@ -77,34 +60,32 @@ namespace GraphViewBase {
 
             AddToClassList("port");
         }
-        #endregion
 
-        #region Properties
-        public void SetParent(BaseNode node) {
+#endregion
+
+#region Properties
+
+        public void SetParent(BaseNode node)
+        {
             ParentNode = node;
         }
-
 
         public BaseNode ParentNode {
             get => m_ParentNode;
             internal set {
-                if (m_ParentNode == value) { return; }
-                if (m_ParentNode != null) { m_ParentNode.OnPositionChange -= OnParentPositionChange; }
-                if (value == null) { m_ParentNode = null; } else {
+                if (m_ParentNode == value) {
+                    return;
+                }
+                if (m_ParentNode != null) {
+                    m_ParentNode.OnPositionChange -= OnParentPositionChange;
+                }
+                if (value == null) {
+                    m_ParentNode = null;
+                }
+                else {
                     m_ParentNode = value;
                     m_ParentNode.OnPositionChange += OnParentPositionChange;
                 }
-            }
-        }
-
-        internal Color CapColor {
-            get {
-                if (m_ConnectorBoxCap == null) { return Color.black; }
-                return m_ConnectorBoxCap.resolvedStyle.backgroundColor;
-            }
-
-            set {
-                if (m_ConnectorBoxCap != null) { m_ConnectorBoxCap.style.backgroundColor = value; }
             }
         }
 
@@ -125,7 +106,9 @@ namespace GraphViewBase {
         public bool Highlight {
             get => m_Highlight;
             set {
-                if (m_Highlight == value) { return; }
+                if (m_Highlight == value) {
+                    return;
+                }
 
                 m_Highlight = value;
 
@@ -133,15 +116,16 @@ namespace GraphViewBase {
             }
         }
 
-
         private Color portColor = s_DefaultColor;
+
         public Color PortColor {
             get => portColor;
             set {
                 portColor = value;
-                UpdateCapColor();
+                UpdateColor();
             }
         }
+
         public virtual Color DefaultPortColor { get; } = s_DefaultColor;
         public virtual Color DisabledPortColor { get; } = s_DefaultDisabledColor;
 
@@ -149,19 +133,27 @@ namespace GraphViewBase {
         public PortCapacity Capacity { get; }
         public bool AllowMultiDrag { get; set; } = true;
         public virtual IEnumerable<BaseEdge> Connections => m_Connections;
-        #endregion
 
-        #region Edges
-        public virtual bool Connected(bool ignoreCandidateEdges = true) {
+#endregion
+
+#region Edges
+
+        public virtual bool Connected(bool ignoreCandidateEdges = true)
+        {
             foreach (BaseEdge edge in m_Connections) {
-                if (ignoreCandidateEdges && edge.IsCandidateEdge()) { continue; }
+                if (ignoreCandidateEdges && edge.IsCandidateEdge()) {
+                    continue;
+                }
                 return true;
             }
             return false;
         }
 
-        public virtual BaseEdge ConnectTo(BasePort other) {
-            if (other == null) { throw new ArgumentNullException(nameof(other)); }
+        public virtual BaseEdge ConnectTo(BasePort other)
+        {
+            if (other == null) {
+                throw new ArgumentNullException(nameof(other));
+            }
 
             if (other.Direction == Direction) {
                 throw new ArgumentException("Cannot connect two ports with the same direction");
@@ -172,31 +164,47 @@ namespace GraphViewBase {
             return edge;
         }
 
-        public virtual void Connect(BaseEdge edge) {
-            if (edge == null) { throw new ArgumentException("The value passed to Port.Connect is null"); }
+        public virtual void Connect(BaseEdge edge)
+        {
+            if (edge == null) {
+                throw new ArgumentException("The value passed to Port.Connect is null");
+            }
 
-            if (!m_Connections.Contains(edge)) { m_Connections.Add(edge); }
+            if (!m_Connections.Contains(edge)) {
+                m_Connections.Add(edge);
+            }
 
-            UpdateCapColor();
+            UpdateCapVisibility();
         }
 
-        public virtual void Disconnect(BaseEdge edge) {
-            if (edge == null) { throw new ArgumentException("The value passed to PortPresenter.Disconnect is null"); }
+        public virtual void Disconnect(BaseEdge edge)
+        {
+            if (edge == null) {
+                throw new ArgumentException("The value passed to PortPresenter.Disconnect is null");
+            }
 
             m_Connections.Remove(edge);
-            UpdateCapColor();
+            UpdateCapVisibility();
         }
 
-        public virtual bool CanConnectToMore(bool ignoreCandidateEdges = true)
-            => Capacity == PortCapacity.Multi || !Connected(ignoreCandidateEdges);
+        public virtual bool CanConnectToMore(bool ignoreCandidateEdges = true) =>
+            Capacity == PortCapacity.Multi || !Connected(ignoreCandidateEdges);
 
-        public bool IsConnectedTo(BasePort other, bool ignoreCandidateEdges = true) {
+        public bool IsConnectedTo(BasePort other, bool ignoreCandidateEdges = true)
+        {
             foreach (BaseEdge e in m_Connections) {
-                if (ignoreCandidateEdges && e.IsCandidateEdge()) { continue; }
+                if (ignoreCandidateEdges && e.IsCandidateEdge()) {
+                    continue;
+                }
                 if (Direction == Direction.Output) {
-                    if (e.Input == other) { return true; }
-                } else {
-                    if (e.Output == other) { return true; }
+                    if (e.Input == other) {
+                        return true;
+                    }
+                }
+                else {
+                    if (e.Output == other) {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -206,7 +214,8 @@ namespace GraphViewBase {
 
         public bool IsOnSameNode(BasePort other) => other.ParentNode == ParentNode;
 
-        public virtual bool CanConnectTo(BasePort other, bool ignoreCandidateEdges = true) {
+        public virtual bool CanConnectTo(BasePort other, bool ignoreCandidateEdges = true)
+        {
             // Debug.Log($"{this} - {other} >> same_direction: {SameDirection(other)}," 
             //           + $"same_node: {IsOnSameNode(other)}, "
             //           + $"has_cap: {CanConnectToMore(ignoreCandidateEdges)}, "
@@ -218,15 +227,28 @@ namespace GraphViewBase {
                    && other.CanConnectToMore(ignoreCandidateEdges)
                    && !IsConnectedTo(other, ignoreCandidateEdges);
         }
-        #endregion
 
-        #region Style
-        internal void UpdateCapColor() {
-            if (Connected()) { m_ConnectorBoxCap.style.backgroundColor = PortColor; } else { m_ConnectorBoxCap.style.backgroundColor = StyleKeyword.Null; }
+#endregion
+
+#region Style
+
+        internal void UpdateColor()
+        {
+            SetPortBorderColor(PortColor);
+            m_ConnectorBoxCap.style.backgroundColor = PortColor;
         }
 
-        private void UpdateConnectorColorAndEnabledState() {
-            if (m_ConnectorBox == null) { return; }
+        private void UpdateCapVisibility(bool force = false)
+        {
+            Debug.Log($"Chaning visility of cap colored {PortColor} - Connected: {Connected()}");
+            m_ConnectorBoxCap.style.visibility = Connected() || force ? Visibility.Visible : Visibility.Hidden;
+        }
+
+        private void UpdateConnectorColorAndEnabledState()
+        {
+            if (m_ConnectorBox == null) {
+                return;
+            }
 
             Color color = Highlight ? PortColor : DisabledPortColor;
             m_ConnectorBox.style.borderLeftColor = color;
@@ -236,42 +258,61 @@ namespace GraphViewBase {
             m_ConnectorBox.SetEnabled(Highlight);
         }
 
-        #endregion
+        private void SetPortBorderColor(Color color)
+        {
+            m_ConnectorBox.style.borderLeftColor = color;
+            m_ConnectorBox.style.borderTopColor = color;
+            m_ConnectorBox.style.borderRightColor = color;
+            m_ConnectorBox.style.borderBottomColor = color;
+        }
 
-        #region Position
+#endregion
+
+#region Position
+
         public event Action<PositionData> OnPositionChange;
         public Vector2 GetGlobalCenter() => m_ConnectorBox.LocalToWorld(GetCenter());
         public Vector2 GetCenter() => new Rect(Vector2.zero, m_ConnectorBox.layout.size).center;
         public Vector2 GetPosition() => Vector2.zero;
         public void SetPosition(Vector2 position) => throw new NotImplementedException();
         public void ApplyDeltaToPosition(Vector2 delta) => throw new NotImplementedException();
-        private void OnParentPositionChange(PositionData positionData)
-            => OnPositionChange?.Invoke(new() { element = this });
-        #endregion
 
-        #region Event Handlers 
+        private void OnParentPositionChange(PositionData positionData) =>
+            OnPositionChange?.Invoke(new() { element = this });
+
+#endregion
+
+#region Event Handlers
+
         [EventInterest(typeof(DragOfferEvent), typeof(DropEnterEvent), typeof(DropEvent), typeof(DropExitEvent))]
 #if UNITY_6000_0_OR_NEWER
-        protected override void HandleEventBubbleUp(EventBase evt) {
+        protected override void HandleEventBubbleUp(EventBase evt)
+        {
             base.HandleEventBubbleUp(evt);
 #else
         protected override void ExecuteDefaultActionAtTarget(EventBase evt) {
             base.ExecuteDefaultActionAtTarget(evt);
 #endif
-            if (evt.eventTypeId == DragOfferEvent.TypeId()) OnDragOffer((DragOfferEvent)evt);
-            else if (evt.eventTypeId == DropEnterEvent.TypeId()) OnDropEnter((DropEnterEvent)evt);
-            else if (evt.eventTypeId == DropEvent.TypeId()) OnDrop((DropEvent)evt);
-            else if (evt.eventTypeId == DropExitEvent.TypeId()) OnDropExit((DropExitEvent)evt);
+            if (evt.eventTypeId == DragOfferEvent.TypeId())
+                OnDragOffer((DragOfferEvent)evt);
+            else if (evt.eventTypeId == DropEnterEvent.TypeId())
+                OnDropEnter((DropEnterEvent)evt);
+            else if (evt.eventTypeId == DropEvent.TypeId())
+                OnDrop((DropEvent)evt);
+            else if (evt.eventTypeId == DropExitEvent.TypeId())
+                OnDropExit((DropExitEvent)evt);
         }
 
-        private void OnDragOffer(DragOfferEvent e) {
+        private void OnDragOffer(DragOfferEvent e)
+        {
             if (ParentNode != null && ParentNode.Graph != null && ParentNode.Graph.IsViewDrag(e)) {
                 ParentNode.Graph.OnDragOffer(e, true);
                 return;
             }
 
             // Check if this is a port drag event 
-            if (!IsPortDrag(e) || !CanConnectToMore()) return;
+            if (!IsPortDrag(e) || !CanConnectToMore())
+                return;
 
             // Create edge
             BaseEdge draggedEdge = ParentNode.Graph.CreateEdge();
@@ -286,13 +327,16 @@ namespace GraphViewBase {
             e.SetDragThreshold(10);
         }
 
-        private void OnDropEnter(DropEnterEvent e) {
-            if (e.GetUserData() is IDropPayload dropPayload && typeof(BaseEdge).IsAssignableFrom(dropPayload.GetPayloadType())) {
+        private void OnDropEnter(DropEnterEvent e)
+        {
+            if (e.GetUserData() is IDropPayload dropPayload &&
+                typeof(BaseEdge).IsAssignableFrom(dropPayload.GetPayloadType())) {
                 // Consume event
                 e.StopImmediatePropagation();
 
                 // Sanity
-                if (dropPayload.GetPayload().Count == 0) throw new("Drop payload was unexpectedly empty");
+                if (dropPayload.GetPayload().Count == 0)
+                    throw new("Drop payload was unexpectedly empty");
 
                 // Grab dragged port
                 BaseEdge draggedEdge = (BaseEdge)dropPayload.GetPayload()[0];
@@ -304,17 +348,20 @@ namespace GraphViewBase {
                 }
 
                 // But if it's compatible, light this port up 
-                m_ConnectorBoxCap.style.backgroundColor = PortColor;
+                UpdateCapVisibility(true);
             }
         }
 
-        private void OnDrop(DropEvent e) {
-            if (e.GetUserData() is IDropPayload dropPayload && typeof(BaseEdge).IsAssignableFrom(dropPayload.GetPayloadType())) {
+        private void OnDrop(DropEvent e)
+        {
+            if (e.GetUserData() is IDropPayload dropPayload &&
+                typeof(BaseEdge).IsAssignableFrom(dropPayload.GetPayloadType())) {
                 // Consume event
                 e.StopImmediatePropagation();
 
                 // Sanity
-                if (dropPayload.GetPayload().Count == 0) throw new("Drop payload was unexpectedly empty");
+                if (dropPayload.GetPayload().Count == 0)
+                    throw new("Drop payload was unexpectedly empty");
 
                 // Grab dragged port (iterate backwards since this can result in deletions)
                 for (int i = dropPayload.GetPayload().Count - 1; i >= 0; i--) {
@@ -325,30 +372,39 @@ namespace GraphViewBase {
                 }
 
                 // But if it's compatible, update caps as appropriate 
-                UpdateCapColor();
+                UpdateCapVisibility();
             }
         }
 
-        private void OnDropExit(DropExitEvent e) {
-            if (e.GetUserData() is IDropPayload dropPayload && typeof(BaseEdge).IsAssignableFrom(dropPayload.GetPayloadType())) {
+        private void OnDropExit(DropExitEvent e)
+        {
+            if (e.GetUserData() is IDropPayload dropPayload &&
+                typeof(BaseEdge).IsAssignableFrom(dropPayload.GetPayloadType())) {
                 // Consume event
                 e.StopImmediatePropagation();
 
                 // Sanity
-                if (dropPayload.GetPayload().Count == 0) throw new("Drop payload was unexpectedly empty");
+                if (dropPayload.GetPayload().Count == 0)
+                    throw new("Drop payload was unexpectedly empty");
 
                 // But if it's compatible, update caps as appropriate 
-                UpdateCapColor();
+                UpdateCapVisibility();
             }
         }
 
-        private bool IsPortDrag<T>(DragAndDropEvent<T> e) where T : DragAndDropEvent<T>, new() {
-            if ((MouseButton)e.button != MouseButton.LeftMouse) { return false; }
-            if (!e.modifiers.IsNone()) { return false; }
+        private bool IsPortDrag<T>(DragAndDropEvent<T> e) where T : DragAndDropEvent<T>, new()
+        {
+            if ((MouseButton)e.button != MouseButton.LeftMouse) {
+                return false;
+            }
+            if (!e.modifiers.IsNone()) {
+                return false;
+            }
             return true;
         }
 
-        private void ConnectToPortWithEdge(DropEvent e, BasePort anchoredPort, BaseEdge draggedEdge) {
+        private void ConnectToPortWithEdge(DropEvent e, BasePort anchoredPort, BaseEdge draggedEdge)
+        {
             // Cancel invalid drags or already extant edges  
             if (!CanConnectTo(anchoredPort)) {
                 // Real edges will be returned to their former state
@@ -362,7 +418,8 @@ namespace GraphViewBase {
             if (anchoredPort.Direction == Direction.Input) {
                 inputPort = anchoredPort;
                 outputPort = this;
-            } else {
+            }
+            else {
                 inputPort = this;
                 outputPort = anchoredPort;
             }
@@ -377,14 +434,18 @@ namespace GraphViewBase {
             }
 
             // This was a temporary edge, reset it and remove from the graph
-            else { ParentNode.Graph.RemoveElement(draggedEdge); }
+            else {
+                ParentNode.Graph.RemoveElement(draggedEdge);
+            }
 
             // Create new edge (reusing the old deleted edge)
             draggedEdge.Input = inputPort;
             draggedEdge.Output = outputPort;
+            ParentNode.Graph.OnEdgeCreate(draggedEdge);
             ParentNode.Graph.OnActionExecuted(Actions.EdgeCreate, draggedEdge);
         }
-        #endregion
+
+#endregion
 
         public override string ToString() => PortName;
     }

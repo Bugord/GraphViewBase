@@ -10,9 +10,10 @@ using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace GraphViewBase {
-    public abstract class GraphView : VisualElement {
-
+namespace GraphViewBase
+{
+    public abstract class GraphView : VisualElement
+    {
         private const int k_FrameBorder = 30;
         private const int k_PanAreaWidth = 100;
         private const int k_PanSpeed = 4;
@@ -30,9 +31,26 @@ namespace GraphViewBase {
         public ShortcutHandler shortcutHandler = null;
         public abstract void OnActionExecuted(Actions actionType, object data = null);
 
-        #region Constructor
-        protected GraphView() {
+#region Callbacks
 
+        public virtual void OnEdgeCreate(BaseEdge edge)
+        {
+        }
+
+        public virtual void OnEdgeDrop(BaseEdge edge)
+        {
+        }
+
+        public virtual void OnEdgeDelete(BaseEdge edge)
+        {
+        }
+
+#endregion
+
+#region Constructor
+
+        protected GraphView()
+        {
             //
             // GraphView - Level 0
             //
@@ -87,19 +105,25 @@ namespace GraphViewBase {
             };
         }
 
-        #endregion
+#endregion
 
-        #region Helper Classes
-        public class Layer : VisualElement {
+#region Helper Classes
+
+        public class Layer : VisualElement
+        {
             public Layer() => pickingMode = PickingMode.Ignore;
         }
-        #endregion
 
-        #region Properties
+#endregion
+
+#region Properties
+
         private static StyleSheet DefaultStyle {
             get {
                 if (s_DefaultStyle == null) {
-                    s_DefaultStyle = AssetDatabase.LoadAssetAtPath<StyleSheet>(AssetDatabase.GUIDToAssetPath("09510940da67cc447a0e207f2731c573"));
+                    s_DefaultStyle =
+                        AssetDatabase.LoadAssetAtPath<StyleSheet>(
+                            AssetDatabase.GUIDToAssetPath("09510940da67cc447a0e207f2731c573"));
                 }
                 return s_DefaultStyle;
             }
@@ -108,19 +132,24 @@ namespace GraphViewBase {
         public ViewTransformChanged OnViewTransformChanged { get; set; }
         protected internal GraphElementContainer ContentContainer { get; }
         internal ITransform ViewTransform => ContentContainer.transform;
-        
-        public bool IsFocusedElementNullOrNotBindable => focusController == null || focusController.focusedElement == null || !(focusController.focusedElement is IBindable);
 
-        #endregion
+        public bool IsFocusedElementNullOrNotBindable =>
+            focusController == null || focusController.focusedElement == null ||
+            !(focusController.focusedElement is IBindable);
 
-        #region Factories
+#endregion
+
+#region Factories
+
         public virtual BaseEdge CreateEdge() => new Edge();
 
-        public virtual BasePort CreatePort(Orientation orientation, Direction direction, PortCapacity capacity)
-            => new(orientation, direction, capacity);
-        #endregion
+        public virtual BasePort CreatePort(Orientation orientation, Direction direction, PortCapacity capacity) =>
+            new(orientation, direction, capacity);
 
-        #region View Transform
+#endregion
+
+#region View Transform
+
         public delegate void ViewTransformChanged(GraphElementContainer contentContainer);
 
         //public delegate void MouseUp(MouseUpEvent evt);
@@ -129,12 +158,14 @@ namespace GraphViewBase {
         //public delegate void MouseMove(MouseMoveEvent evt);
         //public MouseMove OnMouseMove { get; set; }
 
-        public void UpdateViewTransform(Vector3 newPosition)
-            => UpdateViewTransform(newPosition, ViewTransform.scale);
+        public void UpdateViewTransform(Vector3 newPosition) => UpdateViewTransform(newPosition, ViewTransform.scale);
 
-        public void UpdateViewTransform(Vector3 newPosition, Vector3 newScale) {
+        public void UpdateViewTransform(Vector3 newPosition, Vector3 newScale)
+        {
             float validateFloat = newPosition.x + newPosition.y + newPosition.z + newScale.x + newScale.y + newScale.z;
-            if (float.IsInfinity(validateFloat) || float.IsNaN(validateFloat)) { return; }
+            if (float.IsInfinity(validateFloat) || float.IsNaN(validateFloat)) {
+                return;
+            }
 
             ViewTransform.scale = newScale;
             ViewTransform.position = newPosition;
@@ -145,42 +176,50 @@ namespace GraphViewBase {
 
         public GraphElementContainer GetContentContainer() => ContentContainer;
 
-        #endregion
+#endregion
 
-        #region Pan
+#region Pan
+
         private IPositionable m_PanElement;
         private Vector2 m_PanOriginDiff;
         private readonly IVisualElementScheduledItem m_PanSchedule;
 
-        internal void TrackElementForPan(IPositionable element) {
+        internal void TrackElementForPan(IPositionable element)
+        {
             m_PanOriginDiff = Vector2.zero;
             m_PanElement = element;
             m_PanSchedule.Resume();
         }
 
-        internal Vector2 UntrackElementForPan(IPositionable element, bool resetView = false) {
+        internal Vector2 UntrackElementForPan(IPositionable element, bool resetView = false)
+        {
             if (element == m_PanElement) {
                 m_PanSchedule.Pause();
                 m_PanElement = null;
-                if (resetView) { UpdateViewTransform((Vector2)ViewTransform.position + m_PanOriginDiff); }
+                if (resetView) {
+                    UpdateViewTransform((Vector2)ViewTransform.position + m_PanOriginDiff);
+                }
                 return m_PanOriginDiff;
             }
             return Vector2.zero;
         }
 
-        private Vector2 GetEffectivePanSpeed(Vector2 mousePos) {
+        private Vector2 GetEffectivePanSpeed(Vector2 mousePos)
+        {
             Vector2 effectiveSpeed = Vector2.zero;
 
             if (mousePos.x <= k_PanAreaWidth) {
                 effectiveSpeed.x = -((k_PanAreaWidth - mousePos.x) / k_PanAreaWidthAndMinSpeedFactor) * k_PanSpeed;
-            } else if (mousePos.x >= m_GridBackground.layout.width - k_PanAreaWidth) {
+            }
+            else if (mousePos.x >= m_GridBackground.layout.width - k_PanAreaWidth) {
                 effectiveSpeed.x = (mousePos.x - (m_GridBackground.layout.width - k_PanAreaWidth))
                     / k_PanAreaWidthAndMinSpeedFactor * k_PanSpeed;
             }
 
             if (mousePos.y <= k_PanAreaWidth) {
                 effectiveSpeed.y = -((k_PanAreaWidth - mousePos.y) / k_PanAreaWidthAndMinSpeedFactor) * k_PanSpeed;
-            } else if (mousePos.y >= m_GridBackground.layout.height - k_PanAreaWidth) {
+            }
+            else if (mousePos.y >= m_GridBackground.layout.height - k_PanAreaWidth) {
                 effectiveSpeed.y = (mousePos.y - (m_GridBackground.layout.height - k_PanAreaWidth))
                     / k_PanAreaWidthAndMinSpeedFactor * k_PanSpeed;
             }
@@ -188,14 +227,16 @@ namespace GraphViewBase {
             return Vector2.ClampMagnitude(effectiveSpeed, k_MaxPanSpeed);
         }
 
-        private void Pan() {
-
+        private void Pan()
+        {
             // Use element center as the point to test against the bounds of the pan area
             Vector2 elementPositionWorld = m_PanElement.GetGlobalCenter();
 
             // If the point has entered the bounds of the pan area, calculate how fast we want to pan
             Vector2 speed = GetEffectivePanSpeed(elementPositionWorld);
-            if (Vector2.zero == speed) { return; }
+            if (Vector2.zero == speed) {
+                return;
+            }
 
             // Record changes in pan
             m_PanOriginDiff += speed;
@@ -209,12 +250,18 @@ namespace GraphViewBase {
             // Set position
             m_PanElement.ApplyDeltaToPosition(localSpeed);
         }
-        #endregion
 
-        #region Layers
-        internal void ChangeLayer(GraphElement element) { GetLayer(element.Layer).Add(element); }
+#endregion
 
-        private VisualElement GetLayer(int index) {
+#region Layers
+
+        internal void ChangeLayer(GraphElement element)
+        {
+            GetLayer(element.Layer).Add(element);
+        }
+
+        private VisualElement GetLayer(int index)
+        {
             if (!m_ContainerLayers.TryGetValue(index, out Layer layer)) {
                 layer = new() { name = $"Layer {index}" };
                 m_ContainerLayers[index] = layer;
@@ -225,9 +272,11 @@ namespace GraphViewBase {
             }
             return layer;
         }
-        #endregion
 
-        #region Zoom
+#endregion
+
+#region Zoom
+
         private readonly ZoomManipulator m_Zoomer;
 
         public float MinScale {
@@ -264,8 +313,11 @@ namespace GraphViewBase {
 
         public float CurrentScale => ViewTransform.scale.x;
 
-        protected void ValidateTransform() {
-            if (ContentContainer == null) { return; }
+        protected void ValidateTransform()
+        {
+            if (ContentContainer == null) {
+                return;
+            }
             Vector3 transformScale = ViewTransform.scale;
 
             transformScale.x = Mathf.Clamp(transformScale.x, MinScale, MaxScale);
@@ -273,18 +325,22 @@ namespace GraphViewBase {
 
             UpdateViewTransform(ViewTransform.position, transformScale);
         }
-        #endregion
 
-        #region Event Handlers
+#endregion
+
+#region Event Handlers
+
         private readonly Marquee m_Marquee;
         private bool m_DraggingView;
         private bool m_DraggingMarquee;
         public Vector2 mousePosition;
 
-        [EventInterest(typeof(MouseMoveEvent), typeof(DragOfferEvent), typeof(DragEvent), typeof(DragEndEvent), typeof(DragCancelEvent),
+        [EventInterest(typeof(MouseMoveEvent), typeof(DragOfferEvent), typeof(DragEvent), typeof(DragEndEvent),
+            typeof(DragCancelEvent),
             typeof(DropEnterEvent), typeof(DropEvent), typeof(DropExitEvent))]
 #if UNITY_6000_0_OR_NEWER
-        protected override void HandleEventBubbleUp(EventBase evt) {
+        protected override void HandleEventBubbleUp(EventBase evt)
+        {
             base.HandleEventBubbleUp(evt);
 #else
         protected override void ExecuteDefaultActionAtTarget(EventBase evt) {
@@ -319,7 +375,8 @@ namespace GraphViewBase {
             }
         }
 
-        public void OnDragOffer(DragOfferEvent e, bool forceViewDrag = false) {
+        public void OnDragOffer(DragOfferEvent e, bool forceViewDrag = false)
+        {
             if (forceViewDrag || IsViewDrag(e)) {
                 // Accept Drag
                 e.AcceptDrag(this);
@@ -328,7 +385,8 @@ namespace GraphViewBase {
 
                 // Assume focus
                 Focus();
-            } else if (IsMarqueeDrag(e)) {
+            }
+            else if (IsMarqueeDrag(e)) {
                 // Accept Drag
                 e.AcceptDrag(this);
                 e.StopImmediatePropagation();
@@ -338,7 +396,9 @@ namespace GraphViewBase {
                 bool additive = e.modifiers.IsShift();
                 bool subtractive = e.modifiers.IsActionKey();
                 bool exclusive = !(additive ^ subtractive);
-                if (exclusive) { ContentContainer.ClearSelection(true); }
+                if (exclusive) {
+                    ContentContainer.ClearSelection(true);
+                }
 
                 // Create marquee
                 Add(m_Marquee);
@@ -353,20 +413,23 @@ namespace GraphViewBase {
             }
         }
 
-        private void OnDrag(DragEvent e) {
+        private void OnDrag(DragEvent e)
+        {
             if (m_DraggingMarquee) {
                 e.StopImmediatePropagation();
 
                 // TODO - MouseMoveEvent doesn't correctly report mouse button so I don't check IsMarqueeDrag 
                 m_Marquee.End = this.WorldToLocal(e.mousePosition);
-            } else if (m_DraggingView) {
+            }
+            else if (m_DraggingView) {
                 e.StopImmediatePropagation();
                 // TODO - MouseMoveEvent doesn't correctly report mouse button so I don't check IsViewDrag 
                 UpdateViewTransform(ViewTransform.position + (Vector3)e.mouseDelta);
             }
         }
 
-        private void OnDragEnd(DragEndEvent e) {
+        private void OnDragEnd(DragEndEvent e)
+        {
             if (m_DraggingMarquee) {
                 // Remove marquee
                 e.StopImmediatePropagation();
@@ -388,7 +451,8 @@ namespace GraphViewBase {
                     Rect localSelRect = this.ChangeCoordinatesTo(element, selectionRect);
                     if (element.Overlaps(localSelRect)) {
                         element.Selected = exclusive || additive;
-                    } else if (exclusive) {
+                    }
+                    else if (exclusive) {
                         element.Selected = false;
                     }
                     if (element.Selected) {
@@ -399,25 +463,29 @@ namespace GraphViewBase {
                     OnActionExecuted(Actions.SelectionChanged);
                 }
                 m_DraggingMarquee = false;
-            } else if (m_DraggingView) {
+            }
+            else if (m_DraggingView) {
                 e.StopImmediatePropagation();
                 m_DraggingView = false;
             }
         }
 
-        private void OnDragCancel(DragCancelEvent e) {
+        private void OnDragCancel(DragCancelEvent e)
+        {
             if (m_DraggingMarquee) {
                 e.StopImmediatePropagation();
                 m_Marquee.RemoveFromHierarchy();
                 m_DraggingMarquee = false;
-            } else if (m_DraggingView) {
+            }
+            else if (m_DraggingView) {
                 e.StopImmediatePropagation();
                 UpdateViewTransform(ViewTransform.position + Vector3.Scale(e.mouseDelta, ViewTransform.scale));
                 m_DraggingView = false;
             }
         }
 
-        private void OnDropEnter(DropEnterEvent e) {
+        private void OnDropEnter(DropEnterEvent e)
+        {
             if (e.GetUserData() is IDropPayload dropPayload &&
                 typeof(BaseEdge).IsAssignableFrom(dropPayload.GetPayloadType())) {
                 // Consume event
@@ -425,30 +493,24 @@ namespace GraphViewBase {
             }
         }
 
-        public void OnDrop(DropEvent e) {
-
+        public void OnDrop(DropEvent e)
+        {
             if (e.GetUserData() is IDropPayload dropPayload &&
                 typeof(BaseEdge).IsAssignableFrom(dropPayload.GetPayloadType())) {
                 // Consume event
                 e.StopImmediatePropagation();
 
-                // Delete edges 
-                for (int i = dropPayload.GetPayload().Count - 1; i >= 0; i--) {
+                // Dropping edges 
+                for (var i = dropPayload.GetPayload().Count - 1; i >= 0; i--) {
                     // Grab the edge
-                    BaseEdge edge = (BaseEdge)dropPayload.GetPayload()[i];
-
-                    // Delete real edge
-                    if (edge.IsRealEdge()) {
-                        OnActionExecuted(Actions.EdgeDelete, edge);
-                    }else {
-                        OnActionExecuted(Actions.EdgeDrop, edge);
-                        RemoveElement(edge);
-                    }
+                    var edge = (BaseEdge)dropPayload.GetPayload()[i];
+                    OnEdgeDrop(edge);
                 }
             }
         }
 
-        private void OnDropExit(DropExitEvent e) {
+        private void OnDropExit(DropExitEvent e)
+        {
             if (e.GetUserData() is IDropPayload dropPayload &&
                 typeof(BaseEdge).IsAssignableFrom(dropPayload.GetPayloadType())) {
                 // Consume event
@@ -456,37 +518,59 @@ namespace GraphViewBase {
             }
         }
 
-        private bool IsMarqueeDrag<T>(DragAndDropEvent<T> e) where T : DragAndDropEvent<T>, new() {
-            if ((MouseButton)e.button != MouseButton.LeftMouse) { return false; }
-            if (e.modifiers.IsNone()) { return true; }
-            if (e.modifiers.IsExclusiveShift()) { return true; }
-            if (e.modifiers.IsExclusiveActionKey()) { return true; }
+        private bool IsMarqueeDrag<T>(DragAndDropEvent<T> e) where T : DragAndDropEvent<T>, new()
+        {
+            if ((MouseButton)e.button != MouseButton.LeftMouse) {
+                return false;
+            }
+            if (e.modifiers.IsNone()) {
+                return true;
+            }
+            if (e.modifiers.IsExclusiveShift()) {
+                return true;
+            }
+            if (e.modifiers.IsExclusiveActionKey()) {
+                return true;
+            }
             return false;
         }
 
-        public bool IsViewDrag<T>(DragAndDropEvent<T> e) where T : DragAndDropEvent<T>, new() {
-            if (e.modifiers.HasFlag(EventModifiers.Alt)) { /*Debug.Log("view drag");*/ return true; }
-            if ((MouseButton)e.button != MouseButton.MiddleMouse) { return false; }
-            if (!e.modifiers.IsNone()) { return false; }
+        public bool IsViewDrag<T>(DragAndDropEvent<T> e) where T : DragAndDropEvent<T>, new()
+        {
+            if (e.modifiers.HasFlag(EventModifiers.Alt)) {
+                /*Debug.Log("view drag");*/
+                return true;
+            }
+            if ((MouseButton)e.button != MouseButton.MiddleMouse) {
+                return false;
+            }
+            if (!e.modifiers.IsNone()) {
+                return false;
+            }
             return true;
         }
-        #endregion
 
-        #region Keybinding
+#endregion
+
+#region Keybinding
+
 #if UNITY_6000_0_OR_NEWER
-        protected override void HandleEventTrickleDown(EventBase baseEvent) {
+        protected override void HandleEventTrickleDown(EventBase baseEvent)
+        {
             base.HandleEventTrickleDown(baseEvent);
 #else
         protected override void ExecuteDefaultAction(EventBase baseEvent) {
             base.ExecuteDefaultAction(baseEvent);
 #endif
-            if (baseEvent is not KeyDownEvent evt) { return; }
+            if (baseEvent is not KeyDownEvent evt) {
+                return;
+            }
             ExecuteShortcutHandler(evt.keyCode, evt.modifiers);
         }
 
-
-        protected void ExecuteShortcutHandler(KeyCode keyCode, EventModifiers modifiers) {
-            if (panel.GetCapturingElement(PointerId.mousePointerId) != null ) {
+        protected void ExecuteShortcutHandler(KeyCode keyCode, EventModifiers modifiers)
+        {
+            if (panel.GetCapturingElement(PointerId.mousePointerId) != null) {
                 return;
             }
 
@@ -497,39 +581,52 @@ namespace GraphViewBase {
             OnActionExecuted(keyAction);
         }
 
-        #endregion
+#endregion
 
-        #region Add / Remove Elements from Hierarchy
-        public void AddElement(GraphElement graphElement) {
+#region Add / Remove Elements from Hierarchy
+
+        public void AddElement(GraphElement graphElement)
+        {
             graphElement.Graph = this;
             GetLayer(graphElement.Layer).Add(graphElement);
         }
 
-        public void RemoveElement(GraphElement graphElement) {
+        public void RemoveElement(GraphElement graphElement)
+        {
             UntrackElementForPan(graphElement); // Stop panning if we were panning
             graphElement.RemoveFromHierarchy();
             graphElement.Graph = null;
         }
-        #endregion
 
-        #region Ports
-        public void ConnectPorts(BasePort input, BasePort output) {
+#endregion
+
+#region Ports
+
+        public void ConnectPorts(BasePort input, BasePort output)
+        {
             AddElement(input.ConnectTo(output));
         }
 
-        internal void IlluminateCompatiblePorts(BasePort port) {
+        internal void IlluminateCompatiblePorts(BasePort port)
+        {
             foreach (BasePort otherPort in ContentContainer.Ports) {
                 otherPort.Highlight = port.CanConnectTo(otherPort);
             }
         }
 
-        internal void IlluminateAllPorts() {
-            foreach (BasePort otherPort in ContentContainer.Ports) { otherPort.Highlight = true; }
+        internal void IlluminateAllPorts()
+        {
+            foreach (BasePort otherPort in ContentContainer.Ports) {
+                otherPort.Highlight = true;
+            }
         }
-        #endregion
 
-        #region Framing
-        protected void Frame() {
+#endregion
+
+#region Framing
+
+        protected void Frame()
+        {
             if (IsFocusedElementNullOrNotBindable) {
                 // Construct rect for selected and unselected elements
                 Rect rectToFitSelected = ContentContainer.layout;
@@ -543,16 +640,19 @@ namespace GraphViewBase {
                         if (!reachedFirstSelected) {
                             rectToFitSelected = ge.ChangeCoordinatesTo(ContentContainer, ge.Rect());
                             reachedFirstSelected = true;
-                        } else {
+                        }
+                        else {
                             rectToFitSelected = RectUtils.Encompass(rectToFitSelected,
                                 ge.ChangeCoordinatesTo(ContentContainer, ge.Rect()));
                         }
-                    } else if (!reachedFirstSelected) // Don't bother if we already have at least one selected item
-                      {
+                    }
+                    else if (!reachedFirstSelected) // Don't bother if we already have at least one selected item
+                    {
                         if (!reachedFirstUnselected) {
                             rectToFitUnselected = ge.ChangeCoordinatesTo(ContentContainer, ge.Rect());
                             reachedFirstUnselected = true;
-                        } else {
+                        }
+                        else {
                             rectToFitUnselected = RectUtils.Encompass(rectToFitUnselected,
                                 ge.ChangeCoordinatesTo(ContentContainer, ge.Rect()));
                         }
@@ -565,10 +665,12 @@ namespace GraphViewBase {
                 if (reachedFirstSelected) {
                     CalculateFrameTransform(rectToFitSelected, layout, k_FrameBorder, out frameTranslation,
                         out frameScaling);
-                } else if (reachedFirstUnselected) {
+                }
+                else if (reachedFirstUnselected) {
                     CalculateFrameTransform(rectToFitUnselected, layout, k_FrameBorder, out frameTranslation,
                         out frameScaling);
-                } else {
+                }
+                else {
                     // Note: rectToFitSelected will just be the container rect
                     CalculateFrameTransform(rectToFitSelected, layout, k_FrameBorder, out frameTranslation,
                         out frameScaling);
@@ -580,35 +682,40 @@ namespace GraphViewBase {
             }
         }
 
-        private float ZoomRequiredToFrameRect(Rect rectToFit, Rect clientRect, int border) {
+        private float ZoomRequiredToFrameRect(Rect rectToFit, Rect clientRect, int border)
+        {
             // bring slightly smaller screen rect into GUI space
-            Rect screenRect = new() { xMin = border, xMax = clientRect.width - border, yMin = border, yMax = clientRect.height - border };
+            Rect screenRect = new()
+                { xMin = border, xMax = clientRect.width - border, yMin = border, yMax = clientRect.height - border };
             Rect identity = GUIUtility.ScreenToGUIRect(screenRect);
             return Math.Min(identity.width / rectToFit.width, identity.height / rectToFit.height);
         }
 
         public void CalculateFrameTransform(Rect rectToFit, Rect clientRect, int border, out Vector3 frameTranslation,
-            out Vector3 frameScaling) {
+            out Vector3 frameScaling)
+        {
             // measure zoom level necessary to fit the canvas rect into the screen rect
             float zoomLevel = ZoomRequiredToFrameRect(rectToFit, clientRect, border);
 
             // clamp
             zoomLevel = Mathf.Clamp(zoomLevel, MinScale, MaxScale);
 
-            Matrix4x4 transformMatrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new(zoomLevel, zoomLevel, 1.0f));
+            Matrix4x4 transformMatrix =
+                Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new(zoomLevel, zoomLevel, 1.0f));
             Vector2 edge = new(clientRect.width, clientRect.height);
             Vector2 origin = new(0, 0);
 
             Rect r = new() { min = origin, max = edge };
 
-            Vector3 parentScale = new(transformMatrix.GetColumn(0).magnitude, transformMatrix.GetColumn(1).magnitude, transformMatrix.GetColumn(2).magnitude);
+            Vector3 parentScale = new(transformMatrix.GetColumn(0).magnitude, transformMatrix.GetColumn(1).magnitude,
+                transformMatrix.GetColumn(2).magnitude);
             Vector2 offset = r.center - rectToFit.center * parentScale.x;
 
             // Update output values before leaving
             frameTranslation = new(offset.x, offset.y, 0.0f);
             frameScaling = parentScale;
         }
-        #endregion
 
+#endregion
     }
 }
