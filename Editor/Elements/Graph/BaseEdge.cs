@@ -5,8 +5,10 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace GraphViewBase {
-    public abstract class BaseEdge : GraphElement {
+namespace GraphViewBase
+{
+    public abstract class BaseEdge : GraphElement
+    {
         protected BasePort m_InputPort;
         private Vector2 m_InputPortPosition;
         protected bool m_InputPositionOverridden;
@@ -17,35 +19,50 @@ namespace GraphViewBase {
         protected bool m_OutputPositionOverridden;
         protected Vector2 m_OutputPositionOverride;
 
-        #region Constructor
-        public BaseEdge() {
+#region Constructor
+
+        public BaseEdge()
+        {
             Capabilities
                 |= Capabilities.Selectable
                    | Capabilities.Deletable
                    | Capabilities.Movable;
         }
-        #endregion
 
-        public BasePort GetInputPort() {
+#endregion
+
+        public BasePort GetInputPort()
+        {
             return m_InputPort;
         }
-        public BasePort GetOutputPort() {
+
+        public BasePort GetOutputPort()
+        {
             return m_OutputPort;
         }
 
-        #region Properties
+#region Properties
+
         public Vector2 From {
             get {
-                if (m_OutputPositionOverridden) { return m_OutputPositionOverride; }
-                if (Output != null && Graph != null) { return m_OutputPortPosition; }
+                if (m_OutputPositionOverridden) {
+                    return m_OutputPositionOverride;
+                }
+                if (Output != null && Graph != null) {
+                    return m_OutputPortPosition;
+                }
                 return Vector2.zero;
             }
         }
 
         public Vector2 To {
             get {
-                if (m_InputPositionOverridden) { return m_InputPositionOverride; }
-                if (Input != null && Graph != null) { return m_InputPortPosition; }
+                if (m_InputPositionOverridden) {
+                    return m_InputPositionOverride;
+                }
+                if (Input != null && Graph != null) {
+                    return m_InputPortPosition;
+                }
                 return Vector2.zero;
             }
         }
@@ -63,7 +80,8 @@ namespace GraphViewBase {
             set => SetPort(ref m_InputPort, value);
         }
 
-        private void SetPort(ref BasePort portToSet, BasePort newPort) {
+        private void SetPort(ref BasePort portToSet, BasePort newPort)
+        {
             if (newPort != portToSet) {
                 // Clean Up Old Connection
                 if (portToSet != null) {
@@ -82,70 +100,97 @@ namespace GraphViewBase {
                 OnEdgeChanged();
             }
         }
-        #endregion
 
-        #region Drag Status
+#endregion
+
+#region Drag Status
+
         public bool IsRealEdge() => Input != null && Output != null;
         public bool IsCandidateEdge() => m_InputPositionOverridden || m_OutputPositionOverridden;
-        #endregion
 
-        #region Event Handlers
-        protected virtual void OnGeometryChanged(GeometryChangedEvent e) {
+#endregion
+
+#region Event Handlers
+
+        protected virtual void OnGeometryChanged(GeometryChangedEvent e)
+        {
             UpdateCachedInputPortPosition();
             UpdateCachedOutputPortPosition();
             OnEdgeChanged();
-
         }
 
-        protected override void OnAddedToGraphView() {
+        protected override void OnAddedToGraphView()
+        {
             base.OnAddedToGraphView();
             UpdateCachedInputPortPosition();
             UpdateCachedOutputPortPosition();
         }
 
-        protected override void OnRemovedFromGraphView() {
+        protected override void OnRemovedFromGraphView()
+        {
             base.OnRemovedFromGraphView();
             Disconnect();
             UnsetPositionOverrides();
         }
-        #endregion
 
-        #region Ports
-        public void SetPortByDirection(BasePort port) {
-            if (port.Direction == Direction.Input) { Input = port; } else { Output = port; }
+#endregion
+
+#region Ports
+
+        public void SetPortByDirection(BasePort port)
+        {
+            if (port.Direction == Direction.Input) {
+                Input = port;
+            }
+            else {
+                Output = port;
+            }
         }
 
-        public void Disconnect() {
+        public void Disconnect()
+        {
             Input = null;
             Output = null;
         }
 
-        private void TrackPort(BasePort port) {
+        private void TrackPort(BasePort port)
+        {
             port.OnPositionChange += OnPortPositionChanged;
 
             VisualElement current = port.hierarchy.parent;
             while (current != null) {
-                if (current is GraphView.Layer) { break; }
+                if (current is GraphView.Layer) {
+                    break;
+                }
 
                 // if we encounter our node ignore it but continue in the case there are nodes inside nodes
-                if (current != port.ParentNode) { current.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged); }
+                if (current != port.ParentNode) {
+                    current.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+                }
 
                 current = current.hierarchy.parent;
             }
-            if (port.ParentNode != null) { port.ParentNode.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged); }
+            if (port.ParentNode != null) {
+                port.ParentNode.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            }
 
             OnPortPositionChanged(new() { element = port });
         }
 
-        private void UntrackPort(BasePort port) {
+        private void UntrackPort(BasePort port)
+        {
             port.OnPositionChange -= OnPortPositionChanged;
 
             VisualElement current = port.hierarchy.parent;
             while (current != null) {
-                if (current is GraphView.Layer) { break; }
+                if (current is GraphView.Layer) {
+                    break;
+                }
 
                 // if we encounter our node ignore it but continue in the case there are nodes inside nodes
-                if (current != port.ParentNode) { current.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged); }
+                if (current != port.ParentNode) {
+                    current.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+                }
 
                 current = current.hierarchy.parent;
             }
@@ -154,58 +199,91 @@ namespace GraphViewBase {
             }
         }
 
-        private void OnPortPositionChanged(PositionData changeData) {
+        private void OnPortPositionChanged(PositionData changeData)
+        {
             BasePort p = changeData.element as BasePort;
             if (p != null && Graph != null) {
-                if (p == m_InputPort) { UpdateCachedInputPortPosition(); } else if (p == m_OutputPort) { UpdateCachedOutputPortPosition(); }
+                if (p == m_InputPort) {
+                    UpdateCachedInputPortPosition();
+                }
+                else if (p == m_OutputPort) {
+                    UpdateCachedOutputPortPosition();
+                }
                 OnEdgeChanged();
             }
         }
 
-        private void UpdateCachedInputPortPosition() {
-            if (Graph == null || Input == null) { return; }
+        private void UpdateCachedInputPortPosition()
+        {
+            if (Graph == null || Input == null) {
+                return;
+            }
             m_InputPortPosition = Graph.ContentContainer.WorldToLocal(Input.GetGlobalCenter());
-            if (!m_InputPositionOverridden) { m_InputPositionOverride = m_InputPortPosition; }
+            if (!m_InputPositionOverridden) {
+                m_InputPositionOverride = m_InputPortPosition;
+            }
         }
 
-        private void UpdateCachedOutputPortPosition() {
-            if (Graph == null || Output == null) { return; }
+        private void UpdateCachedOutputPortPosition()
+        {
+            if (Graph == null || Output == null) {
+                return;
+            }
             m_OutputPortPosition = Graph.ContentContainer.WorldToLocal(Output.GetGlobalCenter());
-            if (!m_OutputPositionOverridden) { m_OutputPositionOverride = m_OutputPortPosition; }
+            if (!m_OutputPositionOverridden) {
+                m_OutputPositionOverride = m_OutputPortPosition;
+            }
         }
-        #endregion
 
-        #region Position
+#endregion
+
+#region Position
+
         protected abstract void OnEdgeChanged();
 
-        public override void SetPosition(Vector2 newPosition) {
-            if (IsInputPositionOverriden()) { SetInputPositionOverride(newPosition); } else if (IsOutputPositionOverriden()) { SetOutputPositionOverride(newPosition); }
+        public override void SetPosition(Vector2 newPosition)
+        {
+            if (IsInputPositionOverriden()) {
+                SetInputPositionOverride(newPosition);
+            }
+            else if (IsOutputPositionOverriden()) {
+                SetOutputPositionOverride(newPosition);
+            }
             // If there are no overrides, ignore this because we aren't dragging yet.
         }
 
-        public override Vector2 GetPosition() {
-            if (IsInputPositionOverriden()) { return GetInputPositionOverride(); }
-            if (IsOutputPositionOverriden()) { return GetOutputPositionOverride(); }
+        public override Vector2 GetPosition()
+        {
+            if (IsInputPositionOverriden()) {
+                return GetInputPositionOverride();
+            }
+            if (IsOutputPositionOverriden()) {
+                return GetOutputPositionOverride();
+            }
             return Vector2.zero;
         }
 
-        public override void ApplyDeltaToPosition(Vector2 delta) { SetPosition(GetPosition() + delta); }
+        public override void ApplyDeltaToPosition(Vector2 delta)
+        {
+            SetPosition(GetPosition() + delta);
+        }
 
         public Vector2 GetInputPositionOverride() => m_InputPositionOverride;
         public Vector2 GetOutputPositionOverride() => m_OutputPositionOverride;
         public bool IsInputPositionOverriden() => m_InputPositionOverridden;
         public bool IsOutputPositionOverriden() => m_OutputPositionOverridden;
 
-        public void SetInputPositionOverride(Vector2 position)
-            => SetPositionOverride(
+        public void SetInputPositionOverride(Vector2 position) =>
+            SetPositionOverride(
                 position, out m_InputPositionOverride, ref m_InputPositionOverridden, ref m_InputPort);
 
-        public void SetOutputPositionOverride(Vector2 position)
-            => SetPositionOverride(
+        public void SetOutputPositionOverride(Vector2 position) =>
+            SetPositionOverride(
                 position, out m_OutputPositionOverride, ref m_OutputPositionOverridden, ref m_OutputPort);
 
         private void SetPositionOverride(Vector2 position, out Vector2 overrideValueToSet,
-            ref bool overrideFlagToSet, ref BasePort portToUpdate) {
+            ref bool overrideFlagToSet, ref BasePort portToUpdate)
+        {
             // Order here is important
             // TODO - position is being used as a flag for "drag mode". Should be refactored.
             overrideValueToSet = position;
@@ -216,7 +294,8 @@ namespace GraphViewBase {
             OnEdgeChanged();
         }
 
-        public void UnsetPositionOverrides() {
+        public void UnsetPositionOverrides()
+        {
             m_InputPositionOverridden = false;
             m_OutputPositionOverridden = false;
             m_InputPort?.UpdateColor();
@@ -224,48 +303,61 @@ namespace GraphViewBase {
             OnEdgeChanged();
         }
 
-        public override Vector2 GetCenter() {
-            if (m_InputPositionOverridden) { return m_InputPositionOverride; }
-            if (m_OutputPositionOverridden) { return m_OutputPositionOverride; }
+        public override Vector2 GetCenter()
+        {
+            if (m_InputPositionOverridden) {
+                return m_InputPositionOverride;
+            }
+            if (m_OutputPositionOverridden) {
+                return m_OutputPositionOverride;
+            }
             return base.GetCenter();
         }
-        #endregion
 
-        #region Drag Events
-        
+#endregion
+
+#region Drag Events
+
         [EventInterest(typeof(DragOfferEvent))]
 #if UNITY_6000_0_OR_NEWER
-        protected override void HandleEventBubbleUp(EventBase evt) {
+        protected override void HandleEventBubbleUp(EventBase evt)
+        {
             base.HandleEventBubbleUp(evt);
 #else
         protected override void ExecuteDefaultActionAtTarget(EventBase evt) {
             base.ExecuteDefaultActionAtTarget(evt);
 #endif
-            if (evt.eventTypeId == DragOfferEvent.TypeId()) { OnDragOffer((DragOfferEvent)evt); }
-        }
-
-        private void OnDragOffer(DragOfferEvent e) {
-            if (Graph != null && Graph.IsViewDrag(e)) {
-                Graph.OnDragOffer(e, true);
-            } else {
-                // Check if this is a edge drag event 
-                if (!IsEdgeDrag(e) || !IsMovable()) {
-                    return;
-                }
-
-                // Accept Drag
-                e.AcceptDrag(this);
-
-                // Set Drag Threshold
-                e.SetDragThreshold(10);
+            if (evt.eventTypeId == DragOfferEvent.TypeId()) {
+                OnDragOffer((DragOfferEvent)evt);
             }
         }
 
-        private bool IsEdgeDrag<T>(DragAndDropEvent<T> e) where T : DragAndDropEvent<T>, new() {
-            if ((MouseButton)e.button != MouseButton.LeftMouse) { return false; }
-            if (!e.modifiers.IsNone()) { return false; }
+        private void OnDragOffer(DragOfferEvent e)
+        {
+
+            // Check if this is a edge drag event 
+            if (!IsEdgeDrag(e) || !IsMovable()) {
+                return;
+            }
+
+            // Accept Drag
+            e.AcceptDrag(this);
+
+            // Set Drag Threshold
+            e.SetDragThreshold(10);
+        }
+
+        private bool IsEdgeDrag<T>(DragAndDropEvent<T> e) where T : DragAndDropEvent<T>, new()
+        {
+            if ((MouseButton)e.button != MouseButton.LeftMouse) {
+                return false;
+            }
+            if (!e.modifiers.IsNone()) {
+                return false;
+            }
             return true;
         }
+
 #endregion
     }
 }

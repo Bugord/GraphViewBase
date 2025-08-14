@@ -4,8 +4,10 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.UIElements;
 
-namespace GraphViewBase {
-    public class Edge : BaseEdge {
+namespace GraphViewBase
+{
+    public class Edge : BaseEdge
+    {
         public const float k_MinEdgeWidth = 1.75f;
         private const float k_EndPointRadius = 4.0f;
         private const float k_InterceptWidth = 6.0f;
@@ -13,13 +15,11 @@ namespace GraphViewBase {
         private const float k_EdgeTurnDiameter = 16.0f;
         private const float k_EdgeSweepResampleRatio = 4.0f;
         private const int k_EdgeStraightLineSegmentDivisor = 5;
-        private const int k_DefaultEdgeWidth = 2;
-        private const int k_DefaultEdgeWidthSelected = 2;
-        private static readonly Color s_DefaultSelectedColor = new(240 / 255f, 240 / 255f, 240 / 255f);
+        private const float k_DefaultEdgeWidth = 2;
+        private const float k_DefaultEdgeWidthSelected = 2.5f;
+        private static readonly Color s_DefaultSelectedColor = new(68 / 255f, 192 / 255f, 255 / 255f);
         private static readonly Color s_DefaultColor = new(146 / 255f, 146 / 255f, 146 / 255f);
 
-        //private static readonly Gradient s_Gradient = new();
-        private static readonly Stack<VisualElement> s_CapPool = new();
         private readonly List<Vector2> m_LastLocalControlPoints = new();
 
         // The points that will be rendered. Expressed in coordinates local to the element.
@@ -27,207 +27,151 @@ namespace GraphViewBase {
         private float m_CapRadius = 5;
         private bool m_ControlPointsDirty = true;
 
-        private int m_EdgeWidth = 2;
-        private VisualElement m_FromCap;
-        private Color m_FromCapColor;
-        private Color m_InputColor = Color.grey;
-        //private Orientation m_InputOrientation;
-        private Color m_OutputColor = Color.grey;
-        //private Orientation m_OutputOrientation;
-        private bool m_RenderPointsDirty = true;
-        private VisualElement m_ToCap;
-        private Color m_ToCapColor;
+        private float m_EdgeWidth = 2;
 
-        #region Static Helpers
+        private bool m_RenderPointsDirty = true;
+
+        private Color inputColor = Color.grey;
+        private Color outputColor = Color.grey;
+
+        private readonly Gradient gradient;
+
+#region Static Helpers
+
         private static bool Approximately(Vector2 v1, Vector2 v2) =>
             Mathf.Approximately(v1.x, v2.x) && Mathf.Approximately(v1.y, v2.y);
 
-        private static void RecycleCap(VisualElement cap) { s_CapPool.Push(cap); }
+#endregion
 
-        private static VisualElement GetCap() {
-            VisualElement result;
-            if (s_CapPool.Count > 0) { result = s_CapPool.Pop(); } else {
-                result = new();
-                result.AddToClassList("edge-cap");
-            }
+#region Constructor
 
-            return result;
-        }
-        #endregion
-
-        #region Constructor
-        public Edge() {
+        public Edge()
+        {
             ClearClassList();
             AddToClassList("edge");
-            m_FromCap = null;
-            m_ToCap = null;
             CapRadius = k_EndPointRadius;
             InterceptWidth = k_InterceptWidth;
             generateVisualContent = OnGenerateVisualContent;
+            gradient = new Gradient();
+            gradient.SetKeys(new[] {
+                new GradientColorKey(outputColor, 0),
+                new GradientColorKey(inputColor, 1)
+            }, new[] {
+                new GradientAlphaKey(1, 0),
+                new GradientAlphaKey(1, 1)
+            });
         }
-        #endregion
 
-        #region Properties
+#endregion
+
+#region Properties
+
         public override bool Selected {
             get => base.Selected;
             set {
-                if (base.Selected == value) { return; }
+                if (base.Selected == value) {
+                    return;
+                }
                 base.Selected = value;
                 if (value) {
-                    InputColor = ColorSelected;
-                    OutputColor = ColorSelected;
+                    SetGradientColor(ColorSelected);
                     EdgeWidth = EdgeWidthSelected;
-                } else {
-
-                    InputColor = ColorUnselected;
-                    OutputColor = ColorUnselected;
+                }
+                else {
+                    SetGradientColors(inputColor, outputColor);
                     EdgeWidth = EdgeWidthUnselected;
                 }
-            }
-        }
-
-        public Color InputColor {
-            get => m_InputColor;
-            set {
-                if (m_InputColor != value) {
-                    m_InputColor = value;
-                    MarkDirtyRepaint();
-                }
-            }
-        }
-
-        public Color OutputColor {
-            get => m_OutputColor;
-            set {
-                if (m_OutputColor != value) {
-                    m_OutputColor = value;
-                    MarkDirtyRepaint();
-                }
-            }
-        }
-
-        public Color FromCapColor {
-            get => m_FromCapColor;
-            set {
-                if (m_FromCapColor == value) { return; }
-                m_FromCapColor = value;
-
-                if (m_FromCap != null) { m_FromCap.style.backgroundColor = m_FromCapColor; }
-                MarkDirtyRepaint();
-            }
-        }
-
-        public Color ToCapColor {
-            get => m_ToCapColor;
-            set {
-                if (m_ToCapColor == value) { return; }
-                m_ToCapColor = value;
-
-                if (m_ToCap != null) { m_ToCap.style.backgroundColor = m_ToCapColor; }
-                MarkDirtyRepaint();
             }
         }
 
         public float CapRadius {
             get => m_CapRadius;
             set {
-                if (Mathf.Approximately(m_CapRadius, value)) { return; }
+                if (Mathf.Approximately(m_CapRadius, value)) {
+                    return;
+                }
                 m_CapRadius = value;
                 MarkDirtyRepaint();
             }
         }
 
-        public int EdgeWidth {
+        public float EdgeWidth {
             get => m_EdgeWidth;
             set {
-                if (m_EdgeWidth == value) { return; }
+                if (m_EdgeWidth == value) {
+                    return;
+                }
                 m_EdgeWidth = value;
                 UpdateLayout(); // The layout depends on the edges width
             }
         }
 
-        public bool DrawFromCap {
-            get => m_FromCap != null;
-            set {
-                if (!value) {
-                    if (m_FromCap != null) {
-                        m_FromCap.RemoveFromHierarchy();
-                        RecycleCap(m_FromCap);
-                        m_FromCap = null;
-                    }
-                } else {
-                    if (m_FromCap == null) {
-                        m_FromCap = GetCap();
-                        m_FromCap.style.backgroundColor = m_FromCapColor;
-                        Add(m_FromCap);
-                    }
-                }
-            }
-        }
-
-        public bool DrawToCap {
-            get => m_ToCap != null;
-            set {
-                if (!value) {
-                    if (m_ToCap != null) {
-                        m_ToCap.RemoveFromHierarchy();
-                        RecycleCap(m_ToCap);
-                        m_ToCap = null;
-                    }
-                } else {
-                    if (m_ToCap == null) {
-                        m_ToCap = GetCap();
-                        m_ToCap.style.backgroundColor = m_ToCapColor;
-                        Add(m_ToCap);
-                    }
-                }
-            }
-        }
-
-        public virtual int EdgeWidthUnselected { get; } = k_DefaultEdgeWidth;
-        public virtual int EdgeWidthSelected { get; } = k_DefaultEdgeWidthSelected;
+        public virtual float EdgeWidthUnselected { get; } = k_DefaultEdgeWidth;
+        public virtual float EdgeWidthSelected { get; } = k_DefaultEdgeWidthSelected;
         public virtual Color ColorSelected { get; } = s_DefaultSelectedColor;
         public virtual Color ColorUnselected { get; } = s_DefaultColor;
         public float InterceptWidth { get; set; } = 5f;
         public Vector2[] ControlPoints { get; private set; }
-        #endregion
 
-        #region Rendering
-        private void UpdateEdgeCaps() {
-            if (m_FromCap != null) {
-                Vector2 size = m_FromCap.layout.size;
-                if (size.x > 0 && size.y > 0) {
-                    Rect rect = new(From - size / 2f, size);
-                    m_FromCap.style.left = rect.x;
-                    m_FromCap.style.top = rect.y;
-                    m_FromCap.style.width = rect.width;
-                    m_FromCap.style.height = rect.height;
-                }
-            }
-            if (m_ToCap != null) {
-                Vector2 size = m_ToCap.layout.size;
-                if (size.x > 0 && size.y > 0) {
-                    Rect rect = new(To - size / 2f, size);
-                    m_ToCap.style.left = rect.x;
-                    m_ToCap.style.top = rect.y;
-                    m_ToCap.style.width = rect.width;
-                    m_ToCap.style.height = rect.height;
-                }
-            }
+#endregion
+
+#region Rendering
+
+        public void SetColor(Color color)
+        {
+            inputColor = color;
+            outputColor = color;
+            SetGradientColors(inputColor, outputColor);
         }
 
-        public virtual void UpdateLayout() {
-            if (Graph == null) { return; }
+        public void SetInputColor(Color color)
+        {
+            inputColor = color;
+            SetGradientColors(inputColor, outputColor);
+        }
+
+        public void SetOutputColor(Color color)
+        {
+            outputColor = color;
+            SetGradientColors(inputColor, outputColor);
+        }
+
+        private void SetGradientColor(Color color)
+        {
+            SetGradientColors(color, color);
+        }
+
+        private void SetGradientColors(Color inputColor, Color outputColor)
+        {
+            gradient.colorKeys = new[] {
+                new GradientColorKey(outputColor, 0),
+                new GradientColorKey(inputColor, 1)
+            };
+        }
+
+        private void SetGradientAlpha(float alpha)
+        {
+            gradient.alphaKeys = new[] {
+                new GradientAlphaKey(alpha, 0),
+                new GradientAlphaKey(alpha, 1)
+            };
+        }
+
+        public virtual void UpdateLayout()
+        {
+            if (Graph == null) {
+                return;
+            }
             if (m_ControlPointsDirty) {
                 ComputeControlPoints(); // Computes the control points in parent ( graph ) coordinates
                 ComputeLayout(); // Update the element layout based on the control points.
                 m_ControlPointsDirty = false;
             }
-            UpdateEdgeCaps();
             MarkDirtyRepaint();
         }
 
-        private void RenderStraightLines(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4) {
+        private void RenderStraightLines(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
+        {
             float safeSpan = OutputOrientation == Orientation.Horizontal
                 ? Mathf.Abs(p1.x + k_EdgeLengthFromPort - (p4.x - k_EdgeLengthFromPort))
                 : Mathf.Abs(p1.y + k_EdgeLengthFromPort - (p4.y - k_EdgeLengthFromPort));
@@ -246,10 +190,13 @@ namespace GraphViewBase {
             m_RenderPoints.Add(p4);
         }
 
-        protected virtual void UpdateRenderPoints() {
+        protected virtual void UpdateRenderPoints()
+        {
             ComputeControlPoints(); // This should have been updated before : make sure anyway.
 
-            if (m_RenderPointsDirty == false && ControlPoints != null) { return; }
+            if (m_RenderPointsDirty == false && ControlPoints != null) {
+                return;
+            }
 
             Vector2 p1 = Graph.ContentContainer.ChangeCoordinatesTo(this, ControlPoints[0]);
             Vector2 p2 = Graph.ContentContainer.ChangeCoordinatesTo(this, ControlPoints[1]);
@@ -328,13 +275,16 @@ namespace GraphViewBase {
             }
 
             GetRoundedCornerPoints(m_RenderPoints, corner1, Direction.Output);
-            if (renderBothCorners) { GetRoundedCornerPoints(m_RenderPoints, corner2, Direction.Input); }
+            if (renderBothCorners) {
+                GetRoundedCornerPoints(m_RenderPoints, corner2, Direction.Input);
+            }
 
             m_RenderPoints.Add(p4);
             Profiler.EndSample();
         }
 
-        private bool ValidateCornerSweepValues(ref EdgeCornerSweepValues corner1, ref EdgeCornerSweepValues corner2) {
+        private bool ValidateCornerSweepValues(ref EdgeCornerSweepValues corner1, ref EdgeCornerSweepValues corner2)
+        {
             // Get the midpoint between the two corner circle centers.
             Vector2 circlesMidpoint = (corner1.circleCenter + corner2.circleCenter) / 2;
 
@@ -347,7 +297,9 @@ namespace GraphViewBase {
                 : Math.Atan2(p2CenterToCross1.x, p2CenterToCross1.y) -
                   Math.Atan2(p2CenterToCirclesMid.x, p2CenterToCirclesMid.y);
 
-            if (double.IsNaN(angleToCirclesMid)) { return false; }
+            if (double.IsNaN(angleToCirclesMid)) {
+                return false;
+            }
 
             // We need the angle to the circles midpoint to match the turn direction of the first corner's sweep angle.
             angleToCirclesMid = Math.Sign(angleToCirclesMid) * 2 * Mathf.PI - angleToCirclesMid;
@@ -359,7 +311,9 @@ namespace GraphViewBase {
             float h = p2CenterToCirclesMid.magnitude;
             float p2AngleToMidTangent = Mathf.Acos(corner1.radius / h);
 
-            if (double.IsNaN(p2AngleToMidTangent)) { return false; }
+            if (double.IsNaN(p2AngleToMidTangent)) {
+                return false;
+            }
 
             float maxSweepAngle = Mathf.Abs((float)corner1.sweepAngle) - p2AngleToMidTangent * 2;
 
@@ -376,7 +330,8 @@ namespace GraphViewBase {
         }
 
         private EdgeCornerSweepValues GetCornerSweepValues(
-            Vector2 p1, Vector2 cornerPoint, Vector2 p2, float diameter, Direction closestPortDirection) {
+            Vector2 p1, Vector2 cornerPoint, Vector2 p2, float diameter, Direction closestPortDirection)
+        {
             EdgeCornerSweepValues corner = new();
 
             // Calculate initial radius. This radius can change depending on the sharpness of the corner.
@@ -435,13 +390,19 @@ namespace GraphViewBase {
             }
 
             // Validate the sweep angle so it turns into the correct direction.
-            if (corner.sweepAngle > Math.PI) { corner.sweepAngle = -2 * Math.PI + corner.sweepAngle; } else if (corner.sweepAngle < -Math.PI) { corner.sweepAngle = 2 * Math.PI + corner.sweepAngle; }
+            if (corner.sweepAngle > Math.PI) {
+                corner.sweepAngle = -2 * Math.PI + corner.sweepAngle;
+            }
+            else if (corner.sweepAngle < -Math.PI) {
+                corner.sweepAngle = 2 * Math.PI + corner.sweepAngle;
+            }
 
             return corner;
         }
 
         private Vector2 GetCornerCircleCenter(Vector2 cornerPoint, Vector2 crossPoint1, Vector2 crossPoint2,
-            float segment, float radius) {
+            float segment, float radius)
+        {
             float dx = cornerPoint.x * 2 - crossPoint1.x - crossPoint2.x;
             float dy = cornerPoint.y * 2 - crossPoint1.y - crossPoint2.y;
 
@@ -449,7 +410,9 @@ namespace GraphViewBase {
 
             float L = cornerToCenterVector.magnitude;
 
-            if (Mathf.Approximately(L, 0)) { return cornerPoint; }
+            if (Mathf.Approximately(L, 0)) {
+                return cornerPoint;
+            }
 
             float d = new Vector2(segment, radius).magnitude;
             float factor = d / L;
@@ -459,7 +422,8 @@ namespace GraphViewBase {
         }
 
         private void GetRoundedCornerPoints(List<Vector2> points, EdgeCornerSweepValues corner,
-            Direction closestPortDirection) {
+            Direction closestPortDirection)
+        {
             // Calculate the number of points that will sample the arc from the sweep angle.
             int pointsCount = Mathf.CeilToInt((float)Math.Abs(corner.sweepAngle * k_EdgeSweepResampleRatio));
             int sign = Math.Sign(corner.sweepAngle);
@@ -479,11 +443,20 @@ namespace GraphViewBase {
                 // don't cause the edge polygons to twist.
                 if (i == 0 && backwards) {
                     if (OutputOrientation == Orientation.Horizontal) {
-                        if (corner.sweepAngle < 0 && points[^1].y > pointY) { continue; }
-                        if (corner.sweepAngle >= 0 && points[^1].y < pointY) { continue; }
-                    } else {
-                        if (corner.sweepAngle < 0 && points[^1].x < pointX) { continue; }
-                        if (corner.sweepAngle >= 0 && points[^1].x > pointX) { continue; }
+                        if (corner.sweepAngle < 0 && points[^1].y > pointY) {
+                            continue;
+                        }
+                        if (corner.sweepAngle >= 0 && points[^1].y < pointY) {
+                            continue;
+                        }
+                    }
+                    else {
+                        if (corner.sweepAngle < 0 && points[^1].x < pointX) {
+                            continue;
+                        }
+                        if (corner.sweepAngle >= 0 && points[^1].x > pointX) {
+                            continue;
+                        }
                     }
                 }
 
@@ -491,15 +464,19 @@ namespace GraphViewBase {
             }
         }
 
-        private void AssignControlPoint(ref Vector2 destination, Vector2 newValue) {
+        private void AssignControlPoint(ref Vector2 destination, Vector2 newValue)
+        {
             if (!Approximately(destination, newValue)) {
                 destination = newValue;
                 m_RenderPointsDirty = true;
             }
         }
 
-        protected virtual void ComputeControlPoints() {
-            if (m_ControlPointsDirty == false) { return; }
+        protected virtual void ComputeControlPoints()
+        {
+            if (m_ControlPointsDirty == false) {
+                return;
+            }
 
             Profiler.BeginSample("EdgeControl.ComputeControlPoints");
 
@@ -512,23 +489,32 @@ namespace GraphViewBase {
             offset = Mathf.Min(offset, fromToDistance * 2);
             offset = Mathf.Max(offset, k_EdgeTurnDiameter);
 
-            if (ControlPoints == null || ControlPoints.Length != 4) { ControlPoints = new Vector2[4]; }
+            if (ControlPoints == null || ControlPoints.Length != 4) {
+                ControlPoints = new Vector2[4];
+            }
 
             AssignControlPoint(ref ControlPoints[0], From);
 
             if (OutputOrientation == Orientation.Horizontal) {
                 AssignControlPoint(ref ControlPoints[1], new(From.x + offset, From.y));
-            } else { AssignControlPoint(ref ControlPoints[1], new(From.x, From.y + offset)); }
+            }
+            else {
+                AssignControlPoint(ref ControlPoints[1], new(From.x, From.y + offset));
+            }
 
             if (InputOrientation == Orientation.Horizontal) {
                 AssignControlPoint(ref ControlPoints[2], new(To.x - offset, To.y));
-            } else { AssignControlPoint(ref ControlPoints[2], new(To.x, To.y - offset)); }
+            }
+            else {
+                AssignControlPoint(ref ControlPoints[2], new(To.x, To.y - offset));
+            }
 
             AssignControlPoint(ref ControlPoints[3], To);
             Profiler.EndSample();
         }
 
-        private void ComputeLayout() {
+        private void ComputeLayout()
+        {
             Profiler.BeginSample("EdgeControl.ComputeLayout");
             Vector2 to = ControlPoints[^1];
             Vector2 from = ControlPoints[0];
@@ -565,46 +551,50 @@ namespace GraphViewBase {
             Profiler.EndSample();
         }
 
-        private void OnGenerateVisualContent(MeshGenerationContext mgc) {
-            if (EdgeWidth <= 0 || Graph == null) { return; }
+        private void OnGenerateVisualContent(MeshGenerationContext mgc)
+        {
+            if (EdgeWidth <= 0 || Graph == null) {
+                return;
+            }
 
             UpdateRenderPoints();
             if (m_RenderPoints.Count == 0) {
                 return; // Don't draw anything
             }
 
-            // Color outColor = this.outputColor;
-            Color inColor = InputColor;
+            var cpt = m_RenderPoints.Count;
+            var painter2D = mgc.painter2D;
 
-            int cpt = m_RenderPoints.Count;
-            Painter2D painter2D = mgc.painter2D;
+            var width = EdgeWidth;
 
-            float width = EdgeWidth;
-
-            // float alpha = 1.0f;
-            float zoom = Graph.CurrentScale;
+            float alpha = 1.0f;
+            var zoom = Graph.CurrentScale;
 
             if (EdgeWidth * zoom < k_MinEdgeWidth) {
-                // alpha = edgeWidth * zoom / k_MinEdgeWidth;
+                alpha = EdgeWidth * zoom / k_MinEdgeWidth;
                 width = k_MinEdgeWidth / zoom;
             }
 
-            // k_Gradient.SetKeys(new[]{ new GradientColorKey(outColor, 0),new GradientColorKey(inColor, 1)},new []{new GradientAlphaKey(alpha, 0)});
-            painter2D.BeginPath();
+            SetGradientAlpha(alpha);
 
-            // painter2D.strokeGradient = k_Gradient;
-            painter2D.strokeColor = inColor;
+            painter2D.BeginPath();
+            painter2D.strokeGradient = gradient;
             painter2D.lineWidth = width;
             painter2D.MoveTo(m_RenderPoints[0]);
 
-            for (int i = 1; i < cpt; ++i) { painter2D.LineTo(m_RenderPoints[i]); }
+            for (var i = 1; i < cpt; ++i) {
+                painter2D.LineTo(m_RenderPoints[i]);
+            }
 
             painter2D.Stroke();
         }
-        #endregion
 
-        #region Intersection
-        public override bool ContainsPoint(Vector2 localPoint) {
+#endregion
+
+#region Intersection
+
+        public override bool ContainsPoint(Vector2 localPoint)
+        {
             Profiler.BeginSample("EdgeControl.ContainsPoint");
 
             if (!base.ContainsPoint(localPoint)) {
@@ -654,40 +644,52 @@ namespace GraphViewBase {
             return false;
         }
 
-        public override bool Overlaps(Rect rect) {
+        public override bool Overlaps(Rect rect)
+        {
             if (base.Overlaps(rect)) {
                 for (int a = 0; a < m_RenderPoints.Count - 1; a++) {
-                    if (RectUtils.IntersectsSegment(rect, m_RenderPoints[a], m_RenderPoints[a + 1])) { return true; }
+                    if (RectUtils.IntersectsSegment(rect, m_RenderPoints[a], m_RenderPoints[a + 1])) {
+                        return true;
+                    }
                 }
             }
             return false;
         }
-        #endregion
 
-        #region Event Handlers
-        protected override void OnAddedToGraphView() {
+#endregion
+
+#region Event Handlers
+
+        protected override void OnAddedToGraphView()
+        {
             base.OnAddedToGraphView();
             Graph.OnViewTransformChanged += MarkDirtyOnTransformChanged;
             OnEdgeChanged();
         }
 
-        protected override void OnRemovedFromGraphView() {
+        protected override void OnRemovedFromGraphView()
+        {
             base.OnRemovedFromGraphView();
             Graph.OnViewTransformChanged -= MarkDirtyOnTransformChanged;
         }
 
-        private void MarkDirtyOnTransformChanged(GraphElementContainer contentContainer) { MarkDirtyRepaint(); }
+        private void MarkDirtyOnTransformChanged(GraphElementContainer contentContainer)
+        {
+            MarkDirtyRepaint();
+        }
 
-        protected override void OnEdgeChanged() {
-            DrawFromCap = Output == null;
-            DrawToCap = Input == null;
+        protected override void OnEdgeChanged()
+        {
             m_ControlPointsDirty = true;
             UpdateLayout();
         }
-        #endregion
 
-        #region Helper Classes/Structs
-        private struct EdgeCornerSweepValues {
+#endregion
+
+#region Helper Classes/Structs
+
+        private struct EdgeCornerSweepValues
+        {
             public Vector2 circleCenter;
             public double sweepAngle;
             public double startAngle;
@@ -696,7 +698,8 @@ namespace GraphViewBase {
             public Vector2 crossPoint2;
             public float radius;
         }
-        #endregion
+
+#endregion
 
         public override string ToString() => $"Output({Output}) -> Input({Input})";
     }

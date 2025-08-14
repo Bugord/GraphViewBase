@@ -6,10 +6,14 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace GraphViewBase {
-    public class BaseNode : GraphElement {
-        #region Constructor
-        public BaseNode() {
+namespace GraphViewBase
+{
+    public class BaseNode : GraphElement
+    {
+#region Constructor
+
+        public BaseNode()
+        {
             // Root Container
             MainContainer = this;
 
@@ -48,15 +52,17 @@ namespace GraphViewBase {
             AddToClassList("node");
 
             // Capability
-            Capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Ascendable;
+            Capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable |
+                            Capabilities.Ascendable;
             usageHints = UsageHints.DynamicTransform;
 
             //Debug.Log(this.HasMouseCapture());
         }
 
-        #endregion
+#endregion
 
-        #region Properties
+#region Properties
+
         //protected Label TitleLabel { get; }
         //protected TextField EditableTitleLabel { get; }
         public VisualElement MainContainer { get; }
@@ -77,59 +83,85 @@ namespace GraphViewBase {
         public override bool Selected {
             get => base.Selected;
             set {
-                if (base.Selected == value) { return; }
+                if (base.Selected == value) {
+                    return;
+                }
                 base.Selected = value;
-                if (value) { AddToClassList("node-selected"); } else { RemoveFromClassList("node-selected"); }
+                if (value) {
+                    AddToClassList("node-selected");
+                }
+                else {
+                    RemoveFromClassList("node-selected");
+                }
             }
         }
-        #endregion
-        
-        #region Position
-        public override void SetPosition(Vector2 newPosition) {
+
+#endregion
+
+#region Position
+
+        public override void SetPosition(Vector2 newPosition)
+        {
             base.SetPosition(newPosition);
         }
-        #endregion
 
-        #region Ports
-        public virtual void AddPort(BasePort port) {
+#endregion
+
+#region Ports
+
+        public virtual void AddPort(BasePort port)
+        {
             port.ParentNode = this;
-            if (port.Direction == Direction.Input) { InputContainer.Add(port); } else { OutputContainer.Add(port); }
+            if (port.Direction == Direction.Input) {
+                InputContainer.Add(port);
+            }
+            else {
+                OutputContainer.Add(port);
+            }
         }
-        #endregion
 
-        #region Drag Events
+#endregion
+
+#region Drag Events
 
         [EventInterest(typeof(DragOfferEvent))]
 #if UNITY_6000_0_OR_NEWER
-        protected override void HandleEventBubbleUp(EventBase evt) {
+        protected override void HandleEventBubbleUp(EventBase evt)
+        {
             base.HandleEventBubbleUp(evt);
 #else
         protected override void ExecuteDefaultActionAtTarget(EventBase evt) {
             base.ExecuteDefaultActionAtTarget(evt);
 #endif
-            if (evt.eventTypeId == DragOfferEvent.TypeId()) { OnDragOffer((DragOfferEvent)evt); }
-        }
-
-        private void OnDragOffer(DragOfferEvent e) {
-            if (Graph != null && Graph.IsViewDrag(e)) {
-                Graph.OnDragOffer(e, true);
-            } else {
-                // Check if this is a node drag event, additionaly check if the current dragged element is an edge
-                if (!IsNodeDrag(e) || !IsMovable() || e.GetDraggedElement() is BaseEdge) {
-                    return;
-                }
-
-                // Accept Drag
-                e.AcceptDrag(this);
+            if (evt.eventTypeId == DragOfferEvent.TypeId()) {
+                OnDragOffer((DragOfferEvent)evt);
             }
         }
 
-        
-        private bool IsNodeDrag<T>(DragAndDropEvent<T> e) where T : DragAndDropEvent<T>, new() {
-            if ((MouseButton)e.button != MouseButton.LeftMouse) { return false; }
-            if (!e.modifiers.IsNone()) { return false; }
+        private void OnDragOffer(DragOfferEvent e)
+        {
+            Debug.Log("Drag Offer Base Node");
+
+            // Check if this is a node drag event, additionaly check if the current dragged element is an edge
+            if (!IsNodeDrag(e) || !IsMovable() || e.GetDraggedElement() is BaseEdge) {
+                return;
+            }
+
+            // Accept Drag
+            e.AcceptDrag(this);
+        }
+
+        private bool IsNodeDrag<T>(DragAndDropEvent<T> e) where T : DragAndDropEvent<T>, new()
+        {
+            if ((MouseButton)e.button != MouseButton.LeftMouse) {
+                return false;
+            }
+            if (!e.modifiers.IsNone()) {
+                return false;
+            }
             return true;
         }
-        #endregion
+
+#endregion
     }
 }

@@ -335,6 +335,24 @@ namespace GraphViewBase
         private bool m_DraggingMarquee;
         public Vector2 mousePosition;
 
+#if UNITY_6000_0_OR_NEWER
+        protected override void HandleEventTrickleDown(EventBase evt)
+        {
+            base.HandleEventTrickleDown(evt);
+#else
+        protected override void ExecuteDefaultAction(EventBase baseEvent) {
+            base.ExecuteDefaultAction(baseEvent);
+#endif
+            switch (evt.eventTypeId) {
+                case var v when v == KeyDownEvent.TypeId():
+                    ExecuteShortcutHandler(((KeyDownEvent)evt).keyCode, ((KeyDownEvent)evt).modifiers);
+                    break;
+                case var v when v == DragOfferEvent.TypeId():
+                    OnTrickleDownDragOffer((DragOfferEvent)evt);
+                    break;
+            }
+        }
+
         [EventInterest(typeof(MouseMoveEvent), typeof(DragOfferEvent), typeof(DragEvent), typeof(DragEndEvent),
             typeof(DragCancelEvent),
             typeof(DropEnterEvent), typeof(DropEvent), typeof(DropExitEvent))]
@@ -348,45 +366,36 @@ namespace GraphViewBase
 #endif
 
             switch (evt.eventTypeId) {
-                case long v when v == MouseMoveEvent.TypeId():
+                case var v when v == MouseMoveEvent.TypeId():
                     mousePosition = ((MouseMoveEvent)evt).mousePosition;
                     break;
-                case long v when v == DragOfferEvent.TypeId():
+                case var v when v == DragOfferEvent.TypeId():
                     OnDragOffer((DragOfferEvent)evt);
                     break;
-                case long v when v == DragEvent.TypeId():
+                case var v when v == DragEvent.TypeId():
                     OnDrag((DragEvent)evt);
                     break;
-                case long v when v == DragEndEvent.TypeId():
+                case var v when v == DragEndEvent.TypeId():
                     OnDragEnd((DragEndEvent)evt);
                     break;
-                case long v when v == DragCancelEvent.TypeId():
+                case var v when v == DragCancelEvent.TypeId():
                     OnDragCancel((DragCancelEvent)evt);
                     break;
-                case long v when v == DropEnterEvent.TypeId():
+                case var v when v == DropEnterEvent.TypeId():
                     OnDropEnter((DropEnterEvent)evt);
                     break;
-                case long v when v == DropEvent.TypeId():
+                case var v when v == DropEvent.TypeId():
                     OnDrop((DropEvent)evt);
                     break;
-                case long v when v == DropExitEvent.TypeId():
+                case var v when v == DropExitEvent.TypeId():
                     OnDropExit((DropExitEvent)evt);
                     break;
             }
         }
 
-        public void OnDragOffer(DragOfferEvent e, bool forceViewDrag = false)
+        private void OnDragOffer(DragOfferEvent e)
         {
-            if (forceViewDrag || IsViewDrag(e)) {
-                // Accept Drag
-                e.AcceptDrag(this);
-                e.StopImmediatePropagation();
-                m_DraggingView = true;
-
-                // Assume focus
-                Focus();
-            }
-            else if (IsMarqueeDrag(e)) {
+            if (IsMarqueeDrag(e)) {
                 // Accept Drag
                 e.AcceptDrag(this);
                 e.StopImmediatePropagation();
@@ -407,6 +416,19 @@ namespace GraphViewBase
                     start = position,
                     end = position
                 };
+
+                // Assume focus
+                Focus();
+            }
+        }
+
+        private void OnTrickleDownDragOffer(DragOfferEvent e)
+        {
+            if (IsViewDrag(e)) {
+                // Accept Drag
+                e.AcceptDrag(this);
+                e.StopImmediatePropagation();
+                m_DraggingView = true;
 
                 // Assume focus
                 Focus();
@@ -553,20 +575,6 @@ namespace GraphViewBase
 #endregion
 
 #region Keybinding
-
-#if UNITY_6000_0_OR_NEWER
-        protected override void HandleEventTrickleDown(EventBase baseEvent)
-        {
-            base.HandleEventTrickleDown(baseEvent);
-#else
-        protected override void ExecuteDefaultAction(EventBase baseEvent) {
-            base.ExecuteDefaultAction(baseEvent);
-#endif
-            if (baseEvent is not KeyDownEvent evt) {
-                return;
-            }
-            ExecuteShortcutHandler(evt.keyCode, evt.modifiers);
-        }
 
         protected void ExecuteShortcutHandler(KeyCode keyCode, EventModifiers modifiers)
         {

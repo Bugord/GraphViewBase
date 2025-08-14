@@ -240,7 +240,6 @@ namespace GraphViewBase
 
         private void UpdateCapVisibility(bool force = false)
         {
-            Debug.Log($"Chaning visility of cap colored {PortColor} - Connected: {Connected()}");
             m_ConnectorBoxCap.style.visibility = Connected() || force ? Visibility.Visible : Visibility.Hidden;
         }
 
@@ -305,19 +304,16 @@ namespace GraphViewBase
 
         private void OnDragOffer(DragOfferEvent e)
         {
-            if (ParentNode != null && ParentNode.Graph != null && ParentNode.Graph.IsViewDrag(e)) {
-                ParentNode.Graph.OnDragOffer(e, true);
-                return;
-            }
-
+            
             // Check if this is a port drag event 
             if (!IsPortDrag(e) || !CanConnectToMore())
                 return;
 
             // Create edge
-            BaseEdge draggedEdge = ParentNode.Graph.CreateEdge();
+            var draggedEdge = (Edge)ParentNode.Graph.CreateEdge();
             draggedEdge.SetPortByDirection(this);
             draggedEdge.visible = false;
+            draggedEdge.SetColor(PortColor);
             ParentNode.Graph.AddElement(draggedEdge);
 
             // Accept drag
@@ -441,6 +437,11 @@ namespace GraphViewBase
             // Create new edge (reusing the old deleted edge)
             draggedEdge.Input = inputPort;
             draggedEdge.Output = outputPort;
+
+            var edge = (Edge)draggedEdge;
+            edge.SetInputColor(inputPort.PortColor);
+            edge.SetOutputColor(outputPort.PortColor);
+            
             ParentNode.Graph.OnEdgeCreate(draggedEdge);
             ParentNode.Graph.OnActionExecuted(Actions.EdgeCreate, draggedEdge);
         }

@@ -2,12 +2,15 @@ using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace GraphViewBase {
-    internal class Marquee : VisualElement {
+namespace GraphViewBase
+{
+    internal class Marquee : VisualElement
+    {
         private Vector2 m_End;
         private Vector2 m_Start;
 
-        internal Marquee() {
+        internal Marquee()
+        {
             AddToClassList("marquee");
             pickingMode = PickingMode.Ignore;
             generateVisualContent = OnGenerateVisualContent;
@@ -44,12 +47,13 @@ namespace GraphViewBase {
                 max = new(Math.Max(m_Start.x, m_End.x), Math.Max(m_Start.y, m_End.y))
             };
 
-        private void OnGenerateVisualContent(MeshGenerationContext ctx) {
-            Rect selectionRect = SelectionRect;
-            Painter2D painter = ctx.painter2D;
-            painter.lineWidth = 1.0f;
-            painter.strokeColor = Color.white;
-            painter.fillColor = Color.gray;
+        private void OnGenerateVisualContent(MeshGenerationContext ctx)
+        {
+            var selectionRect = SelectionRect;
+            var painter = ctx.painter2D;
+            painter.lineWidth = 1f;
+            painter.strokeColor = new Color(68 / 255f, 192 / 255f, 255 / 255f);
+            painter.fillColor = new Color(0.200f, 0.600f, 1.000f, 0.2f);
             painter.BeginPath();
             painter.MoveTo(new(selectionRect.xMin, selectionRect.yMin));
             painter.LineTo(new(selectionRect.xMax, selectionRect.yMin));
@@ -60,7 +64,8 @@ namespace GraphViewBase {
             painter.Fill();
         }
 
-        internal struct RectangleCoordinates {
+        internal struct RectangleCoordinates
+        {
             internal Vector2 start;
             internal Vector2 end;
         }
