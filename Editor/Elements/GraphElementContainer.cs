@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,6 +12,8 @@ namespace GraphViewBase
     /// </summary>
     public class GraphElementContainer : VisualElement, ISelector, IPositionable, IDropPayload
     {
+        public event Action<IEnumerable<BaseNodeView>> NodesMoved;
+
         private readonly List<GraphElement> m_Selection;
 
         private GraphView m_GraphView;
@@ -32,8 +35,8 @@ namespace GraphViewBase
             ElementsAll = this.Query<GraphElement>().Build();
             ElementsSelected = this.Query<GraphElement>().Where(WhereSelected).Build();
             ElementsUnselected = this.Query<GraphElement>().Where(WhereUnselected).Build();
-            Nodes = this.Query<BaseNode>().Build();
-            NodesSelected = this.Query<BaseNode>().Where(WhereSelected).Build();
+            Nodes = this.Query<BaseNodeView>().Build();
+            NodesSelected = this.Query<BaseNodeView>().Where(WhereSelected).Build();
             Edges = this.Query<BaseEdge>().Build();
             EdgesSelected = this.Query<BaseEdge>().Where(WhereSelected).Build();
             Ports = this.Query<BasePort>().Build();
@@ -54,8 +57,8 @@ namespace GraphViewBase
 
 #region Selection
 
-        public UQueryState<BaseNode> Nodes { get; }
-        public UQueryState<BaseNode> NodesSelected { get; }
+        public UQueryState<BaseNodeView> Nodes { get; }
+        public UQueryState<BaseNodeView> NodesSelected { get; }
         public UQueryState<BasePort> Ports { get; }
         public UQueryState<BaseEdge> Edges { get; }
         public UQueryState<BaseEdge> EdgesSelected { get; }
@@ -161,7 +164,7 @@ namespace GraphViewBase
             // Handle drag begin
             if (m_Dragged is BaseEdge edge)
                 HandleDragBegin(e, edge);
-            else if (m_Dragged is BaseNode node)
+            else if (m_Dragged is BaseNodeView node)
                 HandleDragBegin(e, node);
         }
 
@@ -230,10 +233,10 @@ namespace GraphViewBase
         private void SetDraggedEdgeOutputOverride(BaseEdge edge) =>
             edge.SetOutputPositionOverride(edge.GetOutputPositionOverride());
 
-        private void HandleDragBegin(DragBeginEvent e, BaseNode draggedNode)
+        private void HandleDragBegin(DragBeginEvent e, BaseNodeView draggedNode)
         {
             // Collect selection
-            foreach (BaseNode node in NodesSelected) {
+            foreach (BaseNodeView node in NodesSelected) {
                 // Add to selection
                 m_Selection.Add(node);
 
@@ -250,14 +253,14 @@ namespace GraphViewBase
             // Handle drag
             if (m_Dragged is BaseEdge edge)
                 HandleDrag(e, edge);
-            else if (m_Dragged is BaseNode node)
+            else if (m_Dragged is BaseNodeView node)
                 HandleDrag(e, node);
         }
 
-        private void HandleDrag(DragEvent e, BaseNode draggedNode)
+        private void HandleDrag(DragEvent e, BaseNodeView draggedNode)
         {
             for (int i = 0; i < m_Selection.Count; i++) {
-                BaseNode node = (BaseNode)m_Selection[i];
+                BaseNodeView node = (BaseNodeView)m_Selection[i];
                 node.ApplyDeltaToPosition(e.mouseDelta / transform.scale);
             }
         }
@@ -287,21 +290,25 @@ namespace GraphViewBase
             // Handle drag end
             if (m_Dragged is BaseEdge edge)
                 HandleDragEnd(e, edge);
-            else if (m_Dragged is BaseNode node)
+            else if (m_Dragged is BaseNodeView node)
                 HandleDragEnd(e, node);
 
             // Reset
             Reset();
         }
 
-        private void HandleDragEnd(DragEndEvent e, BaseNode draggedNode)
+        private void HandleDragEnd(DragEndEvent e, BaseNodeView draggedNode)
         {
             for (int i = 0; i < m_Selection.Count; i++) {
-                BaseNode node = (BaseNode)m_Selection[i];
+                BaseNodeView node = (BaseNodeView)m_Selection[i];
                 // Skip deleted nodes 
                 // if (node.parent == null) continue;
                 // Re-enable picking
                 node.pickingMode = PickingMode.Position;
+            }
+
+            if (e.DeltaToDragOrigin != Vector2.zero) {
+                NodesMoved?.Invoke(m_Selection.Cast<BaseNodeView>());
             }
         }
 
@@ -333,18 +340,18 @@ namespace GraphViewBase
             // Handle drag cancel 
             if (m_Dragged is BaseEdge edge)
                 HandleDragCancel(e, edge, totalDiff);
-            else if (m_Dragged is BaseNode node)
+            else if (m_Dragged is BaseNodeView node)
                 HandleDragCancel(e, node, totalDiff);
 
             // Reset
             Reset();
         }
 
-        private void HandleDragCancel(DragCancelEvent e, BaseNode draggedNode, Vector2 totalDragDiff)
+        private void HandleDragCancel(DragCancelEvent e, BaseNodeView draggedNode, Vector2 totalDragDiff)
         {
             for (int i = 0; i < m_Selection.Count; i++) {
                 // Grab node
-                BaseNode node = (BaseNode)m_Selection[i];
+                BaseNodeView node = (BaseNodeView)m_Selection[i];
                 // Skip deleted nodes
                 // if (node.parent == null) continue;
                 // Re-enable picking

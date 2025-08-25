@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -37,11 +38,15 @@ namespace GraphViewBase
         {
         }
 
-        public virtual void OnEdgeDrop(BaseEdge edge)
+        protected virtual void OnEdgeDrop(BaseEdge edge)
         {
         }
 
         public virtual void OnEdgeDelete(BaseEdge edge)
+        {
+        }
+
+        protected virtual void OnNodesMoved(IEnumerable<BaseNodeView> movedNodeViews)
         {
         }
 
@@ -76,6 +81,7 @@ namespace GraphViewBase
             //
             // Content Container
             ContentContainer = new(this);
+            ContentContainer.NodesMoved += OnNodesMoved;
             m_GridBackground.Add(ContentContainer);
 
             //

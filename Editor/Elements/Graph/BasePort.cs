@@ -23,7 +23,7 @@ namespace GraphViewBase
         protected Label m_ConnectorText;
         private Direction m_Direction;
         private bool m_Highlight = true;
-        private BaseNode m_ParentNode;
+        private BaseNodeView m_ParentNode;
 
         public override bool canGrabFocus => true;
         
@@ -65,12 +65,12 @@ namespace GraphViewBase
 
 #region Properties
 
-        public void SetParent(BaseNode node)
+        public void SetParent(BaseNodeView node)
         {
             ParentNode = node;
         }
 
-        public BaseNode ParentNode {
+        public BaseNodeView ParentNode {
             get => m_ParentNode;
             internal set {
                 if (m_ParentNode == value) {

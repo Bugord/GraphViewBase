@@ -8,11 +8,11 @@ using UnityEngine.UIElements;
 
 namespace GraphViewBase
 {
-    public class BaseNode : GraphElement
+    public class BaseNodeView : GraphElement
     {
 #region Constructor
 
-        public BaseNode()
+        public BaseNodeView()
         {
             // Root Container
             MainContainer = this;
@@ -140,8 +140,6 @@ namespace GraphViewBase
 
         private void OnDragOffer(DragOfferEvent e)
         {
-            Debug.Log("Drag Offer Base Node");
-
             // Check if this is a node drag event, additionaly check if the current dragged element is an edge
             if (!IsNodeDrag(e) || !IsMovable() || e.GetDraggedElement() is BaseEdge) {
                 return;
