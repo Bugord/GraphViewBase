@@ -40,7 +40,7 @@
     border-color: rgba(68, 192, 255, 1);
 }
 
-.node-title {
+.title {
     flex-direction: row;
     justify-content: space-between;
     /*background-color: rgba(63, 63, 63, 0.804);*/
@@ -61,7 +61,6 @@
     flex-direction: row;
     flex-wrap: nowrap;
     border-top-width: 1px;
-    border-bottom-width: 1px;
     border-color: black; 
     background-color: rgba(40, 40, 40, 1);
     justify-content: space-between;
@@ -71,17 +70,6 @@
     flex-direction: column;
     /*background-color: rgba(60, 60, 60, 0.804);*/
     padding: 4px;
-}
-
-.node-extension {
-    /*background-color: rgba(63, 63, 63, 0.804);*/
-    flex-direction: column;
-    padding-bottom: 5px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-    padding-top: 5px;
-    padding-left: 5px;
-    padding-right: 5px;
 }
 
 .port {
@@ -118,10 +106,7 @@
 }
 
 .port-connector-box {
-    margin-top: auto;
-    margin-bottom: auto;
-    margin-left: 0px;
-    margin-right: 0px;
+    margin: auto 0;
     width: 8px;
     height: 8px;
     border-radius: 100% 100% 100% 100%;

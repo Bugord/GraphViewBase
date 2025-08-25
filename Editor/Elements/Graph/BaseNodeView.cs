@@ -17,36 +17,29 @@ namespace GraphViewBase
             // Root Container
             MainContainer = this;
 
-            // Title Label
-            //TitleLabel = new() { pickingMode = PickingMode.Ignore };
-            //TitleLabel.AddToClassList("node-title-label");
-
             // Title Container
             TitleContainer = new() { pickingMode = PickingMode.Ignore };
-            TitleContainer.AddToClassList("node-title");
-            //TitleContainer.Add(TitleLabel);
-            //TitleContainer.Add(EditableTitleLabel);
+            TitleContainer.AddToClassList("title-container");
             hierarchy.Add(TitleContainer);
+
+            TitleLabel = new Label();
+            TitleLabel.AddToClassList("title-label");
+            TitleContainer.Add(TitleLabel);
 
             // Input Container
             InputContainer = new() { pickingMode = PickingMode.Ignore };
-            InputContainer.AddToClassList("node-io-input");
+            InputContainer.AddToClassList("inputs");
 
             // Output Container
             OutputContainer = new() { pickingMode = PickingMode.Ignore };
-            OutputContainer.AddToClassList("node-io-output");
+            OutputContainer.AddToClassList("outputs");
 
-            // Top Container 
-            TopContainer = new() { pickingMode = PickingMode.Ignore };
-            TopContainer.AddToClassList("node-io");
-            TopContainer.Add(InputContainer);
-            TopContainer.Add(OutputContainer);
-            hierarchy.Add(TopContainer);
-
-            // Extension Container
-            ExtensionContainer = new() { pickingMode = PickingMode.Ignore };
-            ExtensionContainer.AddToClassList("node-extension");
-            hierarchy.Add(ExtensionContainer);
+            // ports Container 
+            PortContainer = new() { pickingMode = PickingMode.Ignore };
+            PortContainer.AddToClassList("port-container");
+            PortContainer.Add(InputContainer);
+            PortContainer.Add(OutputContainer);
+            hierarchy.Add(PortContainer);
 
             // Style
             AddToClassList("node");
@@ -63,22 +56,23 @@ namespace GraphViewBase
 
 #region Properties
 
-        //protected Label TitleLabel { get; }
+        protected Label TitleLabel { get; }
         //protected TextField EditableTitleLabel { get; }
         public VisualElement MainContainer { get; }
         public VisualElement TitleContainer { get; }
-        public VisualElement TopContainer { get; }
+        public VisualElement PortContainer { get; }
         public VisualElement InputContainer { get; }
         public VisualElement OutputContainer { get; }
         public VisualElement ExtensionContainer { get; }
 
-        /*
         public override string Title {
             get => TitleLabel != null ? TitleLabel.text : string.Empty;
             set {
-                if (TitleLabel != null) { TitleLabel.text = value; }
+                if (TitleLabel != null) {
+                    TitleLabel.text = value;
+                }
             }
-        }*/
+        }
 
         public override bool Selected {
             get => base.Selected;
