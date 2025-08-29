@@ -1,64 +1,78 @@
 using UnityEngine;
 using static GraphViewBase.ShortcutHandler;
 
-namespace GraphViewBase {
-    public class KeyAction {
-        public class Handler {
-            public SpecialKey[] checks;
-            public Actions actionType;
+namespace GraphViewBase
+{
+    public class KeyAction
+    {
+        public class Handler
+        {
+            public readonly SpecialKey[] Checks;
+            public readonly Actions ActionType;
 
-            public Handler(SpecialKey[] checks, Actions actionType) {
-                this.checks = checks;
-                this.actionType = actionType;
+            public Handler(SpecialKey[] checks, Actions actionType)
+            {
+                Checks = checks;
+                ActionType = actionType;
             }
         }
 
-        private KeyCode keyCode;
-        public readonly Handler handler = null;
-        public readonly Handler altHandler = null;
-        private string displayName = null;
+        private readonly KeyCode keyCode;
+        public readonly Handler handler;
+        public readonly Handler altHandler;
+        private string displayName;
 
         public string DisplayName => displayName;
 
-        public KeyAction(KeyCode keyCode, Handler handler, Handler altHandler = null) {
+        public KeyAction(KeyCode keyCode, Handler handler, Handler altHandler = null)
+        {
             this.handler = handler;
             this.altHandler = altHandler;
-            this.keyCode= keyCode;
+            this.keyCode = keyCode;
             CreateDisplayName();
         }
 
-        private void CreateDisplayName() {
-            void CreateDisplayCodeFromHandler(Handler handler, ref string displayCode) {
-                foreach (SpecialKey specialKey in handler.checks) {
-                    if (specialKeyDisplayNameLookup.ContainsKey(specialKey)) {
-                        displayCode += specialKeyDisplayNameLookup[specialKey] + "+";
+        private void CreateDisplayName()
+        {
+            void CreateDisplayCodeFromHandler(Handler handler, ref string displayCode)
+            {
+                foreach (var specialKey in handler.Checks) {
+                    if (specialKeyDisplayNameLookup.TryGetValue(specialKey, out var specialKeyDisplayName)) {
+                        displayCode += specialKeyDisplayName + "+";
                     }
                 }
             }
-            string displayCode = "";
+
+            var displayCode = "";
             CreateDisplayCodeFromHandler(handler, ref displayCode);
             if (altHandler != null) {
                 displayCode += "/ ";
                 CreateDisplayCodeFromHandler(altHandler, ref displayCode);
             }
-            displayName = $"{handler.actionType} ({displayCode + keyCode})";
+            displayName = $"{handler.ActionType} ({displayCode + keyCode})";
         }
 
-        private Actions ExecuteBase(EventModifiers modifiers, Handler handler, Handler alternativeHandler = null) {
-            if (AreChecksValid(modifiers, handler.checks)) {
-                return handler.actionType;
-            } else if (alternativeHandler != null && AreChecksValid(modifiers, alternativeHandler.checks)) {
-                return alternativeHandler.actionType;
+        private Actions ExecuteBase(EventModifiers modifiers, Handler handler, Handler alternativeHandler = null)
+        {
+            if (AreChecksValid(modifiers, handler.Checks)) {
+                return handler.ActionType;
             }
+            
+            if (alternativeHandler != null && AreChecksValid(modifiers, alternativeHandler.Checks)) {
+                return alternativeHandler.ActionType;
+            }
+            
             return Actions.NoAction;
         }
 
-        public Actions Execute(EventModifiers modifiers) {
+        public Actions Execute(EventModifiers modifiers)
+        {
             return ExecuteBase(modifiers, handler, altHandler);
         }
 
-        private bool AreChecksValid(EventModifiers eventModifiers, SpecialKey[] checks) {
-            for (int i = 0; i < checks.Length; i++) {
+        private bool AreChecksValid(EventModifiers eventModifiers, SpecialKey[] checks)
+        {
+            for (var i = 0; i < checks.Length; i++) {
                 if (!specialKeyChecks[checks[i]](eventModifiers)) {
                     return false;
                 }

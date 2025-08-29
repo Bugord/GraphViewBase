@@ -1,52 +1,58 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
-namespace GraphViewBase {
-    public class ShortcutHandler {
-
-        public static readonly Dictionary<SpecialKey, string> specialKeyDisplayNameLookup = new Dictionary<SpecialKey, string>() {
-            { SpecialKey.CommandExclusive, "⌘" },
-            { SpecialKey.Command, "⌘" },
-            { SpecialKey.Control, "Ctrl" },
-            { SpecialKey.ControlExclusive, "Ctrl" },
-            { SpecialKey.Shift, "⇧ "+SpecialKey.Shift },
-        };
+namespace GraphViewBase
+{
+    public class ShortcutHandler
+    {
+        public static readonly Dictionary<SpecialKey, string> specialKeyDisplayNameLookup =
+            new Dictionary<SpecialKey, string>() {
+                { SpecialKey.CommandExclusive, "⌘" },
+                { SpecialKey.Command, "⌘" },
+                { SpecialKey.Control, "Ctrl" },
+                { SpecialKey.ControlExclusive, "Ctrl" },
+                { SpecialKey.Shift, "⇧ " + SpecialKey.Shift },
+            };
 
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         private readonly SpecialKey[] isSystemControlKeyExclusive = new SpecialKey[] { SpecialKey.CommandExclusive };
         private readonly SpecialKey[] isShiftAndCommand = new SpecialKey[] { SpecialKey.Shift, SpecialKey.Command };
         private readonly SpecialKey[] isCommandsAndFunctionKey = new SpecialKey[] { SpecialKey.Command, SpecialKey.Function };
 #else
-        private readonly SpecialKey[] isSystemControlKeyExclusive = new SpecialKey[] { SpecialKey.ControlExclusive };
+        private readonly SpecialKey[] isSystemControlKeyExclusive = { SpecialKey.ControlExclusive };
 #endif
-        private readonly SpecialKey[] isUnmodified = new SpecialKey[] { SpecialKey.Unmodified };
-        private readonly SpecialKey[] isFunctionKey = new SpecialKey[] { SpecialKey.Function };
+        private readonly SpecialKey[] isUnmodified = { SpecialKey.Unmodified };
+        private readonly SpecialKey[] isFunctionKey = { SpecialKey.Function };
 
-        internal static readonly Dictionary<SpecialKey, Func<EventModifiers, bool>> specialKeyChecks = new Dictionary<SpecialKey, Func<EventModifiers, bool>>() {
-            { SpecialKey.Command, (modifiers) => (modifiers & EventModifiers.Command) != 0 },
-            { SpecialKey.CommandExclusive, (modifiers) => modifiers == EventModifiers.Command },
-            { SpecialKey.Control, (modifiers) => (modifiers & EventModifiers.Control) != 0 },
-            { SpecialKey.ControlExclusive, (modifiers) => modifiers == EventModifiers.Control },
-            { SpecialKey.Shift, (modifiers) => (modifiers & EventModifiers.Shift) != 0 },
-            { SpecialKey.Function, (modifiers) => (modifiers & EventModifiers.FunctionKey) != 0 },
-            { SpecialKey.Unmodified, (modifiers) => modifiers == EventModifiers.None },
-        };
+        internal static readonly Dictionary<SpecialKey, Func<EventModifiers, bool>> specialKeyChecks =
+            new Dictionary<SpecialKey, Func<EventModifiers, bool>>() {
+                { SpecialKey.Command, modifiers => (modifiers & EventModifiers.Command) != 0 },
+                { SpecialKey.CommandExclusive, modifiers => modifiers == EventModifiers.Command },
+                { SpecialKey.Control, modifiers => (modifiers & EventModifiers.Control) != 0 },
+                { SpecialKey.ControlExclusive, modifiers => modifiers == EventModifiers.Control },
+                { SpecialKey.Shift, modifiers => (modifiers & EventModifiers.Shift) != 0 },
+                { SpecialKey.Function, modifiers => (modifiers & EventModifiers.FunctionKey) != 0 },
+                { SpecialKey.Unmodified, modifiers => modifiers == EventModifiers.None },
+            };
 
         private Dictionary<KeyCode, KeyAction> keyActions = new Dictionary<KeyCode, KeyAction>();
 
-        public KeyAction GetKeyAction(Actions action) {
-            foreach (KeyValuePair<KeyCode, KeyAction> keyValue in keyActions) {
-                if (keyValue.Value.handler.actionType == action) {
+        public KeyAction GetKeyAction(Actions action)
+        {
+            foreach (var keyValue in keyActions) {
+                if (keyValue.Value.handler.ActionType == action) {
                     return keyValue.Value;
                 }
             }
             return null;
         }
 
-        public ShortcutHandler() {
-            void AddSimpleAction(KeyCode keyCode, Actions actionType, SpecialKey[] checks, KeyAction.Handler altHandler = null) {
+        public ShortcutHandler()
+        {
+            void AddSimpleAction(KeyCode keyCode, Actions actionType, SpecialKey[] checks,
+                KeyAction.Handler altHandler = null)
+            {
                 keyActions.Add(keyCode, new(keyCode, new(checks, actionType), altHandler));
             }
 
@@ -66,15 +72,14 @@ namespace GraphViewBase {
             AddSimpleAction(KeyCode.F2, Actions.Rename, isFunctionKey);
         }
 
-
-        public Actions Execute(KeyCode keyCode, EventModifiers modifiers) {
-            if (keyActions.ContainsKey(keyCode)) {
-                Actions actionType = keyActions[keyCode].Execute(modifiers);
-                if (actionType != Actions.NoAction) {
-                    return actionType;
-                }
+        public Actions Execute(KeyCode keyCode, EventModifiers modifiers)
+        {
+            if (!keyActions.ContainsKey(keyCode)) {
+                return Actions.NoAction;
             }
-            return Actions.NoAction;
+            
+            var actionType = keyActions[keyCode].Execute(modifiers);
+            return actionType != Actions.NoAction ? actionType : Actions.NoAction;
         }
     }
 }
