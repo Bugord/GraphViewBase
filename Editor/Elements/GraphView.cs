@@ -114,6 +114,15 @@ namespace GraphViewBase
                 { Actions.Frame, Frame },
                 { Actions.Delete, DeleteSelectedElements }
             };
+            // Wait for geometry to be calculated before calling Frame()
+            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            // Only frame once when geometry is first calculated
+            UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            Frame();
         }
 
 #endregion
