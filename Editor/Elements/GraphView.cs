@@ -54,6 +54,10 @@ namespace GraphViewBase
         {
         }
 
+        protected virtual void OnNodeCreate()
+        {
+        }
+
 #endregion
 
 #region Constructor
@@ -112,16 +116,15 @@ namespace GraphViewBase
             shortcutHandler = new ShortcutHandler();
             internalActions = new Dictionary<Actions, Action>() {
                 { Actions.Frame, Frame },
-                { Actions.Delete, DeleteSelectedElements }
+                { Actions.Delete, DeleteSelectedElements },
+                { Actions.NodeCreate, OnNodeCreate }
             };
-            // Wait for geometry to be calculated before calling Frame()
-            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            
+            RegisterCallbackOnce<GeometryChangedEvent>(FrameAfterInitialize);
         }
 
-        private void OnGeometryChanged(GeometryChangedEvent evt)
+        private void FrameAfterInitialize(GeometryChangedEvent evt)
         {
-            // Only frame once when geometry is first calculated
-            UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             Frame();
         }
 

@@ -70,6 +70,7 @@ namespace GraphViewBase
             AddSimpleAction(KeyCode.Delete, Actions.Delete, isFunctionKey);
             AddSimpleAction(KeyCode.F, Actions.Frame, isUnmodified);
             AddSimpleAction(KeyCode.F2, Actions.Rename, isFunctionKey);
+            AddSimpleAction(KeyCode.Space, Actions.NodeCreate, isUnmodified);
         }
 
         public Actions Execute(KeyCode keyCode, EventModifiers modifiers)
