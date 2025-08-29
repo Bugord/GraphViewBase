@@ -82,10 +82,10 @@ namespace GraphViewBase
                 }
                 base.Selected = value;
                 if (value) {
-                    AddToClassList("node-selected");
+                    AddToClassList("node--selected");
                 }
                 else {
-                    RemoveFromClassList("node-selected");
+                    RemoveFromClassList("node--selected");
                 }
             }
         }

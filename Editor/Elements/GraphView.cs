@@ -50,6 +50,10 @@ namespace GraphViewBase
         {
         }
 
+        protected virtual void OnElementsDeleted(IEnumerable<GraphElement> elements)
+        {
+        }
+
 #endregion
 
 #region Constructor
@@ -108,6 +112,7 @@ namespace GraphViewBase
             shortcutHandler = new ShortcutHandler();
             internalActions = new Dictionary<Actions, Action>() {
                 { Actions.Frame, Frame },
+                { Actions.Delete, DeleteSelectedElements }
             };
         }
 
@@ -147,7 +152,7 @@ namespace GraphViewBase
 
 #region Factories
 
-        public virtual BaseEdge CreateEdge() => new Edge();
+        public virtual Edge CreateEdge() => new Edge();
 
         public virtual BasePort CreatePort(Orientation orientation, Direction direction, PortCapacity capacity) =>
             new(orientation, direction, capacity);
@@ -576,6 +581,11 @@ namespace GraphViewBase
                 return false;
             }
             return true;
+        }
+
+        private void DeleteSelectedElements()
+        {
+            OnElementsDeleted(ContentContainer.ElementsSelected);
         }
 
 #endregion

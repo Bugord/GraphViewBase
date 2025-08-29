@@ -310,7 +310,7 @@ namespace GraphViewBase
                 return;
 
             // Create edge
-            var draggedEdge = (Edge)ParentNode.Graph.CreateEdge();
+            var draggedEdge = ParentNode.Graph.CreateEdge();
             draggedEdge.SetPortByDirection(this);
             draggedEdge.visible = false;
             draggedEdge.SetColor(PortColor);
